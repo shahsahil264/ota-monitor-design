@@ -142,14 +142,32 @@ conditional update risk based on our current understanding.
 
 ## Component → Project Routing
 
-Use the curated mapping in `ota-component-mapping.yaml` (built from 50+ historical Spikes) for deterministic routing:
+Three-tier lookup. Curated config is primary (fastest, most accurate). OrgData fallback uses the `jira-OCPBUGS-*` query pattern (80% hit rate). Human is last resort.
 
-1. Read the bug's component field
-2. Look up in `ota-component-mapping.yaml` → if exact match, suggest that project
-3. If no exact match, try wildcard rules (e.g., "Networking / *" → CORENET)
-4. If no wildcard match, fall back to OrgData lookup → filter out OCPBUGS/RFE → suggest
-5. If OrgData returns nothing, ask: "Which project should receive the Spike for component {COMPONENT}?"
-6. ALWAYS present as a suggestion — human confirms before Spike is created The Spike is the customer-facing artifact.
+**Step 1: Curated config** (ota-component-mapping.yaml)
+- Read the bug's component field
+- Look up in config → if exact match, suggest that project
+- If no exact match, try wildcard rules (e.g., "Networking / *" → CORENET)
+
+**Step 2: OrgData jira-OCPBUGS-* lookup** (fallback for unmapped components)
+- Convert component name to slug: "Networking / multus" → `jira-OCPBUGS-networking-multus`
+- Search OrgData for that slug → find owning team
+- Get team's Jira projects → filter out OCPBUGS, RFE, OCPSTRAT (meta-projects)
+- If 1 candidate remains → suggest it
+- If multiple remain → present choices: "[MON] [COO] [Other]"
+- If slug not found, try parent: "jira-OCPBUGS-networking-multus" → "jira-OCPBUGS-networking"
+
+**Step 3: Ask human**
+- "Which project should receive the Spike for component {COMPONENT}?"
+
+**Step 4: Human confirms EVERY time** regardless of which step found the answer.
+
+**Known overrides** (OrgData returns wrong result — curated config MUST win):
+- "Machine Config Operator" → MCO (OrgData says Node/OCPNODE — incorrect)
+- "Cloud Compute / Azure" → OCPCLOUD (not in Cyborg)
+- "Authentication" → AUTH (not in Cyborg)
+
+**Note:** OrgData API does NOT expose `types: main` field, Slack channel types, or team roles. These exist in raw Cyborg config files but are not surfaced. Use curated config for disambiguation. The Spike is the customer-facing artifact.
 
 ## Verification Rules
 

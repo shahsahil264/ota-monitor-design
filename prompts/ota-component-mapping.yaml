@@ -1,15 +1,22 @@
 # OTA Component → Jira Project + Slack Mapping
-# Source: Historical Spike analysis from 50+ UpgradeBlocker impact statements (Aug 2026)
-# OrgData live queries for Slack channels (Aug 2026)
+# Source: Historical Spike analysis (50+ UpgradeBlockers) + OrgData verification (Aug 2026)
 # Review quarterly — run: type = Spike AND summary ~ "Impact statement request" AND labels = UpgradeBlocker
 #
 # Routing priority:
 #   1. This config file (deterministic, data-driven)
-#   2. OrgData fuzzy lookup → filter out OCPBUGS/RFE → suggest (fallback)
-#   3. Ask OTA Monitor manually (last resort)
+#   2. OrgData jira-OCPBUGS-* lookup → filter out OCPBUGS/RFE → suggest (80% hit rate)
+#   3. Try parent component (e.g., jira-OCPBUGS-networking if sub-component not found)
+#   4. Ask OTA Monitor manually (last resort)
+#   5. Human confirms EVERY time
+#
+# OrgData API limitations (verified Aug 2026):
+#   - types: main field exists in Cyborg configs but NOT exposed through OrgData API
+#   - Slack channel types (forum/team_internal) NOT exposed — treat all as postable
+#   - Team roles (manager/team_lead UIDs) NOT exposed — escalation is manual
+#   - jira-OCPBUGS-* entries cover ~80% of components (up from 20% with bare names)
 
 component_to_project:
-  # Networking (all → CORENET)
+  # Networking (all → CORENET) — verified via jira-OCPBUGS-networking-*
   "Networking / openshift-sdn":
     project: "CORENET"
     slack_channel: "#forum-ocp-sdn"
@@ -26,15 +33,19 @@ component_to_project:
     project: "CORENET"
     slack_channel: "#forum-ocp-sdn"
 
-  # Machine Config (all → MCO)
+  # Machine Config — OVERRIDE: OrgData maps to Node/OCPNODE (incorrect for Spikes)
   "Machine Config Operator":
     project: "MCO"
     slack_channel: "#forum-ocp-mco"
+    orgdata_override: true
+    note: "OrgData returns Node team → OCPNODE. Historical Spikes go to MCO (e.g., MCO-1896)."
 
-  # Cloud Compute (all → OCPCLOUD)
+  # Cloud Compute (all → OCPCLOUD) — OVERRIDE: not in Cyborg
   "Cloud Compute / Azure":
     project: "OCPCLOUD"
     slack_channel: "#forum-ocp-cloud"
+    orgdata_override: true
+    note: "jira-OCPBUGS-cloud-compute-azure not found in Cyborg."
   "Cloud Compute / AWS":
     project: "OCPCLOUD"
     slack_channel: "#forum-ocp-cloud"
@@ -42,15 +53,16 @@ component_to_project:
     project: "OCPCLOUD"
     slack_channel: "#forum-ocp-cloud"
 
-  # CoreOS / kernel (→ COS)
+  # CoreOS / kernel — verified via jira-OCPBUGS-rhcos
   "RHCOS":
     project: "COS"
     slack_channel: "#dev-coreos"
 
-  # Individual team projects
+  # Individual team projects — verified via jira-OCPBUGS-* lookups
   "Monitoring":
     project: "MON"
     slack_channel: "#forum-openshift-monitoring"
+    note: "OrgData returns 5 projects (COO,MON,OBSDA,OCPBUGS,RFE). MON is correct for Spikes."
   "Console":
     project: "CONSOLE"
     slack_channel: "#forum-ocp-console"
@@ -60,6 +72,8 @@ component_to_project:
   "Authentication":
     project: "AUTH"
     slack_channel: null
+    orgdata_override: true
+    note: "jira-OCPBUGS-authentication not found in Cyborg."
   "Image Registry":
     project: "IR"
     slack_channel: null
@@ -72,6 +86,9 @@ component_to_project:
   "SRIOV":
     project: "NHE"
     slack_channel: null
+  "Installer":
+    project: "CORS"
+    slack_channel: "#forum-ocp-installer"
 
   # Catch-all → OCPNODE
   "Logging":
@@ -90,17 +107,13 @@ wildcard_rules:
     project: "OCPCLOUD"
     slack_channel: "#forum-ocp-cloud"
 
-# Likely but unverified (no historical Spike data)
-#  "Cluster Version Operator": { project: "OTA", slack_channel: "#forum-ocp-updates" }
-#  "Installer": { project: "CORS", slack_channel: "#forum-ocp-installer" }
-#  "Storage / *": { project: "STOR", slack_channel: "#forum-ocp-storage" }
-#  "kube-apiserver": { project: "API", slack_channel: "#forum-ocp-apiserver" }
+# OrgData fallback query pattern:
+#   1. Convert: "Networking / multus" → "jira-OCPBUGS-networking-multus"
+#   2. Search OrgData for that slug
+#   3. If found → get team → list projects → filter out OCPBUGS/RFE/OCPSTRAT
+#   4. If 1 candidate → suggest. If multiple → present choices.
+#   5. If not found → try parent: strip last segment, retry
+#   6. If still not found → ask human
 
 # Default when no match found
 default: "ASK_HUMAN"
-
-# Notes:
-# - OrgData does NOT provide Slack group handles (@team-alias) — only channel names
-# - OrgData escalation contacts are empty for most teams — don't rely on it
-# - For stale reminders: post to the team's slack_channel if available, otherwise #forum-ocp-updates
-# - For 7d escalation: post reminder to channel + notify OTA Monitor to escalate manually
