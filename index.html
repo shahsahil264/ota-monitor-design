@@ -78,7 +78,8 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 
 <nav>
 <div class="logo"><span>OTA</span> Monitor</div>
-<button class="active" onclick="showTab('design')">Design</button>
+<button class="active" onclick="showTab('design')">Overview</button>
+<button onclick="showTab('arch')">Architecture</button>
 <button onclick="showTab('prompts')">Prompt Files</button>
 </nav>
 
@@ -208,7 +209,129 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 </div>
 </div>
 
-<!-- TAB 2: PROMPT FILES -->
+<!-- TAB 2: ARCHITECTURE -->
+<div class="tab" id="arch">
+<div class="w" style="padding-top:72px">
+
+<h2 style="margin-bottom:16px">Architecture</h2>
+
+<div class="c" style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9;color:var(--t3);overflow-x:auto;white-space:pre">
+<span style="color:var(--blue)">CHAI BOT PERSONA (ota_monitor)</span>
+
+<span style="color:var(--green)">SCHEDULED</span>                          <span style="color:var(--purple)">BUTTON-DRIVEN</span>
+&#9500;&#9472; 9am: Enriched scan              &#9500;&#9472; Gate 1: Create Spike
+&#9500;&#9472; 3pm: Brief scan                 &#9500;&#9472; Gate 2: Accept&#8212;Block Edge
+&#9492;&#9472; Fri: Weekly handover             &#9500;&#9472; Gate 3: Add FixedIn
+                                     &#9500;&#9472; Gate 4: Extend Risk
+                                     &#9492;&#9472; Auto: Close Spike
+
+<span style="color:var(--yellow)">TOOLS</span>
+Jira (read/write/create) &#8226; GitHub (fork-based PRs)
+Cyborg/OrgData &#8226; Workspace (/propose-risk) &#8226; Slack (indexed)
+
+<span style="color:var(--red)">EXTERNAL SYSTEMS</span>
+Jira OCPBUGS (labels=state, comments=log, links=relationships)
+openshift/cincinnati-graph-data (blocked-edges/, /propose-risk)
+#osus-graph-data-automation (read-only, pipeline FAILEDs)
+#ota-monitor-bot (all bot output)</div>
+
+<h2 style="margin-top:32px;margin-bottom:12px">Data Flow</h2>
+<div class="c">
+<table>
+<tr><th>Source</th><th>Direction</th><th>What</th></tr>
+<tr><td><strong>#osus-graph-data-automation</strong></td><td>Bot reads (indexed)</td><td>Pipeline FAILED messages. Bot never posts here.</td></tr>
+<tr><td><strong>#forum-ocp-updates</strong></td><td>Bot reads (indexed)</td><td>OTA team context, decisions. Bot never posts here.</td></tr>
+<tr><td><strong>Jira OCPBUGS</strong></td><td>Bot reads + writes</td><td>JQL queries, label updates, comments, issue creation, links</td></tr>
+<tr><td><strong>GitHub graph-data</strong></td><td>Bot writes via fork</td><td>Clone upstream, generate YAML, push to fork, PR to upstream</td></tr>
+<tr><td><strong>#ota-monitor-bot</strong></td><td>Bot posts here</td><td>ALL output: alerts, status, handover, buttons, heartbeat</td></tr>
+</table>
+</div>
+
+<h2 style="margin-top:32px;margin-bottom:12px">State Machine</h2>
+<div class="flow">
+<div class="fb" style="border-bottom:3px solid var(--yellow)"><strong>UpgradeBlocker</strong><small>Suspect</small></div>
+<div class="fa">&#8594;</div>
+<div class="fb" style="border-bottom:3px solid var(--blue)"><strong>IS Requested</strong><small>Waiting on team</small></div>
+<div class="fa">&#8594;</div>
+<div class="fb" style="border-bottom:3px solid var(--purple)"><strong>IS Proposed</strong><small>OTA review</small></div>
+<div class="fa">&#8594;</div>
+<div class="fb" style="border-bottom:3px solid var(--red)"><strong>Rec Blocked</strong><small>Active blocker</small></div>
+<div class="fa">&#8594;</div>
+<div class="fb" style="border-bottom:3px solid var(--green)"><strong>fixedIn</strong><small>Done</small></div>
+</div>
+<div class="c" style="margin-top:12px">
+<p><strong style="color:var(--green)">UpgradeBlocker + Upgrades</strong> &#8212; ADDITIVE. Stay forever. Never removed.</p>
+<p><strong style="color:var(--blue)">Lifecycle labels</strong> &#8212; MUTUALLY EXCLUSIVE. ADD next first, REMOVE previous (crash-safe).</p>
+<p><strong>Priority</strong> (first match wins): UpdateRecBlocked > ISProposed > ISRequested > UpgradeBlocker only</p>
+<p style="margin:0"><strong>Idempotency</strong> (3 layers): linked issues (primary) > bot comments (fast) > labels (tertiary)</p>
+</div>
+
+<h2 style="margin-top:32px;margin-bottom:12px">Four Skills</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div class="c">
+<h3>Skill 1: Monitor <span class="badge bg">9am + 3pm</span></h3>
+<p style="font-size:12px">Three-pass filtering: <code>query_jira</code> (cheap) &#8594; filter by labels &#8594; <code>get_jira_issue</code> on candidates only. 10 detection rules with short-circuit (STOP at first match). Pipeline FAILED check (best-effort). Heartbeat every run.</p>
+</div>
+<div class="c">
+<h3>Skill 2: Lifecycle <span class="badge bb">Button-driven</span></h3>
+<p style="font-size:12px">4 gates + auto-actions. Stale-button check on every click. OrgData for project routing. Resume checklist for crash recovery. Multi-turn execution (3 turns for Gate 2).</p>
+</div>
+<div class="c">
+<h3>Skill 3: PR Generator <span class="badge bp">Workspace</span></h3>
+<p style="font-size:12px">5 phases: setup (fork) &#8594; generate (/propose-risk) &#8594; PR (approval-gated) &#8594; monitor (event/scan) &#8594; post-merge (labels + close Spike). Branch: <code>blocked-edges/OCPBUGS-X-{action}</code></p>
+</div>
+<div class="c">
+<h3>Skill 4: Handover <span class="badge bp">Friday 4pm</span></h3>
+<p style="font-size:12px">Two phases: gather from 9 sources (compact every 3) &#8594; synthesize HTML. Deterministic data only. Cross-check counts. Never empty handover.</p>
+</div>
+</div>
+
+<h2 style="margin-top:32px;margin-bottom:12px">Design Decisions</h2>
+<table>
+<tr><th>#</th><th>Decision</th><th>Why</th></tr>
+<tr><td>1</td><td>3 gates, not 5</td><td>Approval fatigue is #1 threat</td></tr>
+<tr><td>2</td><td>UpgradeBlocker stays forever</td><td>Additive per enhancement doc</td></tr>
+<tr><td>3</td><td>ADD first, REMOVE second</td><td>Crash-safe label transitions</td></tr>
+<tr><td>4</td><td>3-layer idempotency</td><td>Linked issues survive deletion</td></tr>
+<tr><td>5</td><td>Stateless runs</td><td>Jira IS the database</td></tr>
+<tr><td>6</td><td>Two JQL queries</td><td>Secondary catches fixedIn on Closed bugs</td></tr>
+<tr><td>7</td><td>/propose-risk for all YAML</td><td>Composition. Single source of truth.</td></tr>
+<tr><td>8</td><td>Always Spike URL</td><td>Handles private bugs automatically</td></tr>
+<tr><td>9</td><td>Stale-button check</td><td>Bug may have changed since alert</td></tr>
+<tr><td>10</td><td>Close Spike after merge</td><td>Purpose fulfilled</td></tr>
+<tr><td>11</td><td>No guardian loop</td><td>Polling is too expensive. Use events or scan.</td></tr>
+<tr><td>12</td><td>Human primary, bot safety net</td><td>~8 LLM calls/week</td></tr>
+</table>
+
+<h2 style="margin-top:32px;margin-bottom:12px">Error Handling</h2>
+<table>
+<tr><th>Failure</th><th>Recovery</th></tr>
+<tr><td>Jira API fails mid-workflow</td><td>Next run detects inconsistency via 3-layer idempotency</td></tr>
+<tr><td>Workspace pod crashes</td><td>Deterministic branch naming. Fresh start on retry.</td></tr>
+<tr><td>Two people click same button</td><td>Thread context + linked-issue check blocks duplicate</td></tr>
+<tr><td>Bot comment deleted</td><td>Linked-issue check (Layer 1) still blocks duplicates</td></tr>
+<tr><td>Fork diverges from upstream</td><td>Workspace clones UPSTREAM, not fork</td></tr>
+<tr><td>Stale button clicked days later</td><td>Stale-button check re-reads bug state</td></tr>
+<tr><td>Slack indexing breaks</td><td>Pipeline check degrades. Jira lifecycle unaffected.</td></tr>
+</table>
+
+<h2 style="margin-top:32px;margin-bottom:12px">Risks</h2>
+<table>
+<tr><th>Risk</th><th>Status</th></tr>
+<tr><td>Gate fatigue (too many clicks)</td><td><span class="badge bg">Fixed</span> 5&#8594;3 gates</td></tr>
+<tr><td>Label conflicts (non-exclusive)</td><td><span class="badge bg">Fixed</span> Priority ordering</td></tr>
+<tr><td>Slack parsing fragility</td><td><span class="badge bg">Fixed</span> Best-effort, Jira unaffected</td></tr>
+<tr><td>Button re-posting every cycle</td><td><span class="badge bg">Fixed</span> "offered" markers</td></tr>
+<tr><td>fixedIn JQL exclusion</td><td><span class="badge bg">Fixed</span> Secondary JQL</td></tr>
+<tr><td>Label crash safety</td><td><span class="badge bg">Fixed</span> ADD-then-REMOVE</td></tr>
+<tr><td>Version extension after fixedIn</td><td><span class="badge by">v2</span></td></tr>
+<tr><td>Early false positives</td><td><span class="badge bb">Rollout</span> Pause if &lt;90%</td></tr>
+</table>
+
+</div>
+</div>
+
+<!-- TAB 3: PROMPT FILES -->
 <div class="tab" id="prompts">
 <div class="w" style="padding-top:72px">
 <h2 style="margin-bottom:6px">Prompt Files</h2>
