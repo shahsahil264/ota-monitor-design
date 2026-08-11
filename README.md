@@ -25,42 +25,35 @@ The OTA Monitor watches the Cincinnati update pipeline and drives UpgradeBlocker
 │  ┌───────▼────────────────────────────────────▼───────────┐     │
 │  │                    TOOLS                                │     │
 │  │  Jira (read/write/create)  │  GitHub (fork-based PRs)  │     │
-│  │  Cyborg/OrgData (fallback) │  Workspace (/propose-risk) │     │
+│  │  Cyborg/OrgData (primary)  │  Workspace (/propose-risk) │     │
 │  │  Slack (indexed search)    │  web_fetch                │     │
 │  └────────────────────────────────────────────────────────┘     │
 └──────────────────────────────────────────────────────────────────┘
-         │                              │
-         ▼                              ▼
-┌─────────────────┐           ┌──────────────────────┐
-│   Jira OCPBUGS  │           │ openshift/cincinnati- │
-│                 │           │ graph-data            │
-│ Labels = state  │           │                      │
-│ Comments = log  │           │ blocked-edges/ YAML  │
-│ Links = rel     │           │ /propose-risk cmd    │
-└─────────────────┘           └──────────────────────┘
 ```
 
 ## Component → Project Routing
 
-Deterministic config from 50+ historical Spikes, not AI guessing ([per Trevor's recommendation](https://github.com/openshift/enhancements/tree/master/enhancements/update/update-blocker-lifecycle)):
+**Cyborg is the primary source** — official, team-maintained, pivots when teams update preferences ([per Trevor King's recommendation](https://redhat-internal.slack.com/archives/CEGKQ43CP)).
 
 ```
-1. Curated config file (ota-component-mapping.yaml)    ← primary, data-driven
-2. OrgData fuzzy lookup → filter out OCPBUGS/RFE       ← fallback for unknowns
-3. Ask OTA Monitor manually                            ← last resort
-4. Human confirms EVERY time                           ← always
+1. Override config (2 entries only — verified wrong/missing)   ← Cloud Compute/Azure, Monitoring
+2. Cyborg jira-OCPBUGS-* lookup → filter meta-projects        ← primary, 9/11 components clean
+3. Parent component fallback                                   ← safe, same team
+4. Ask OTA Monitor manually                                   ← last resort
+5. Human confirms EVERY time                                  ← always
 ```
 
-Config includes Jira project + Slack channel per component. OrgData tested against 10 components — only 2/10 had clean mappings (OCPBUGS component names ≠ Cyborg names). Config is the reliable path.
+Only 2 overrides needed:
+- **Cloud Compute / Azure** → OCPCLOUD (not in Cyborg — MR to add pending)
+- **Monitoring** → MON (ambiguous: MON and COO are both `types: main`)
 
-See [`prompts/ota-component-mapping.yaml`](prompts/ota-component-mapping.yaml) for the full mapping.
+See [`prompts/ota-component-mapping.yaml`](prompts/ota-component-mapping.yaml) for overrides and verified results.
 
 ## State Machine
 
 ```
 UpgradeBlocker ──► ImpactStatement ──► ImpactStatement ──► UpdateRecommendations ──► fixedIn
 (suspect)          Requested           Proposed             Blocked                   (done)
-                   (waiting on team)   (OTA review)         (active blocker)
 
 UpgradeBlocker label STAYS forever (additive per enhancement doc)
 Only lifecycle labels swap (ADD next first, REMOVE previous — crash-safe)
@@ -83,9 +76,9 @@ Only lifecycle labels swap (ADD next first, REMOVE previous — crash-safe)
 
 | Gate | What You're Deciding |
 |------|---------------------|
-| **1. Create Spike** | "Is this the right team project?" |
-| **2. Accept — Block Edge** | "Is this really a blocker?" (auto-triggers PR) |
-| **3. Add FixedIn** | "Is this the right fix version?" |
+| **1. Create Spike** | \"Is this the right team project?\" |
+| **2. Accept — Block Edge** | \"Is this really a blocker?\" (auto-triggers PR) |
+| **3. Add FixedIn** | \"Is this the right fix version?\" |
 
 Everything else is automatic.
 
@@ -97,14 +90,26 @@ Everything else is automatic.
 | **22:00 UTC** (weekdays) | Same checks | Only if action needed |
 | **Fri 22:00 UTC** | Weekly handover (HTML from 9 sources) | Always |
 
-12h apart to cover EU + US timezones. ~8 LLM calls/week. Weekdays only. All posts tag `@ota-monitor`.
+12h apart to cover EU + US timezones. ~8 LLM calls/week. All posts tag `@ota-monitor`.
+
+## Where AI Earns Its Keep
+
+| Area | AI? | Why |
+|------|-----|-----|
+| JQL → Slack | No | Deterministic. Chai Bot solves infra (creds, hosting), not intelligence. |
+| Component routing | No | Cyborg config (deterministic, team-maintained). |
+| Label transitions | No | Rule-based. |
+| YAML generation | **Yes** | /propose-risk: from regex, matchingRules, file structure. |
+| PromQL patterns | **Yes** | Suggest from existing blocked-edges. Human always reviews. |
+| Handover synthesis | **Yes** | 9 data sources → structured HTML. |
+| Pipeline FAILED classification | **Yes** | Stale branch vs risk extension vs race condition. |
 
 ## Key Design Decisions
 
 | # | Decision | Why |
 |---|----------|-----|
 | 1 | 3 gates, not 5 | Approval fatigue is the #1 threat |
-| 2 | Curated config for routing | OrgData tested — only 2/10 clean mappings. Deterministic config from real data. |
+| 2 | Cyborg-primary routing | Official data source. Teams maintain it. 2-entry override only. |
 | 3 | UpgradeBlocker stays forever | Additive per enhancement doc |
 | 4 | ADD label first, REMOVE second | Crash-safe label transitions |
 | 5 | 3-layer idempotency | Linked issues survive deletion |
@@ -113,7 +118,7 @@ Everything else is automatic.
 | 8 | /propose-risk for all YAML | Composition. Single source of truth. |
 | 9 | Always Spike URL | Handles private bugs automatically |
 | 10 | No guardian loop | Polling too expensive. Events or scan. |
-| 11 | Chai Bot for infra | Solves creds, hosting, scheduling. AI earns its keep in later stages (YAML generation, PromQL, handover synthesis). |
+| 11 | Chai Bot for infra | Solves creds, hosting, scheduling. AI for later stages. |
 | 12 | Human primary, bot safety net | ~8 LLM calls/week |
 
 ## Channels
@@ -128,35 +133,23 @@ Everything else is automatic.
 ├── index.html                         # Design doc (GitHub Pages)
 ├── onboarding.md                      # Ready-to-post #chai-users message
 ├── plan.md                            # Implementation plan summary
-└── prompts/                           # Chai Bot prompt files
+└── prompts/
     ├── 01_role.md                     # Persona identity + rules
     ├── monitor-enriched.md            # 10:00 UTC task (10 detection rules)
     ├── monitor-brief.md               # 22:00 UTC task (silent if nothing)
     ├── weekly-handover.md             # Friday handover (9 data sources)
-    └── ota-component-mapping.yaml     # Component → project + Slack routing
+    └── ota-component-mapping.yaml     # 2-entry override config (Cyborg is primary)
 ```
-
-## Risks (all addressed)
-
-| Risk | Mitigation |
-|------|-----------|
-| Gate fatigue | 5→3 gates, auto-transitions |
-| Label conflicts | Priority ordering, first match wins |
-| Slack fragility | Best-effort, Jira lifecycle unaffected |
-| Button re-posting | \"offered\" markers |
-| fixedIn JQL exclusion | Secondary JQL for Closed bugs |
-| Crash safety | ADD-then-REMOVE label order |
-| Early false positives | Week 1-2: human verifies all, pause if <90% |
 
 ## Status
 
 - [x] Design reviewed 3x by RH Agentic SDLC persona
-- [x] Gap analysis against 12 weeks of real RIT status docs (9 rotations, 8 monitors)
-- [x] 4 prompt files + component mapping config written and reviewed
+- [x] Gap analysis against 12 weeks of real RIT status docs
+- [x] Trevor King reviewed — Cyborg-primary routing, timezone, AI-value feedback incorporated
+- [x] Cyborg/OrgData verified via 3 personas — routing tested, overrides minimized to 2
+- [x] 4 prompt files + override config written and reviewed
 - [x] Channels created (#ota-monitor-bot, #test-ota-monitor-bot)
-- [x] Onboarding message drafted
-- [x] OrgData tested — routing validated, config built from 50+ historical Spikes
-- [x] Trevor King reviewed — timezone, routing, and AI-value feedback incorporated
+- [x] Jira create permissions verified (all 6 target projects)
 - [ ] Post onboarding in #chai-users
 - [ ] Teach 8 Verified Knowledge lessons
 - [ ] Create OTA-MONITOR-FEEDBACK Jira ticket
