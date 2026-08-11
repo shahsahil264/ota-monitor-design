@@ -152,6 +152,9 @@ Table with:
 - Bot issues: #chai-users
 - Escalation: tag OTA reviewers in PR, or ping @ota-monitor
 
+**Components That Required Manual Routing**
+List any OCPBUGS components where Cyborg lookup failed and the OTA Monitor had to specify the project manually. If the same component appears 3+ weeks in a row, it needs an override entry in ota-component-mapping.yaml or a Cyborg MR to fix the mapping.
+
 **Notes for Incoming Monitor**
 - Any in-flight items that need context
 - Any unusual patterns observed this week
