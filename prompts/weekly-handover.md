@@ -10,52 +10,171 @@ This task runs every Friday at 4pm ET. It generates a structured handover docume
 
 ## Data Gathering (Phase 1)
 
-Every number MUST come from a tool query — never estimate or guess.
+Gather data from these 9 sources. Every number in the handover MUST come from a tool query — never estimate or guess.
 
 ### Source 1: Active blockers by lifecycle stage
-JQL: `project = OCPBUGS AND labels in (UpgradeBlocker, ImpactStatementRequested, ImpactStatementProposed, UpdateRecommendationsBlocked) AND status != Closed ORDER BY priority DESC, updated ASC`
+
+Use `query_jira` with:
+```
+project = OCPBUGS AND labels in (UpgradeBlocker, ImpactStatementRequested, ImpactStatementProposed, UpdateRecommendationsBlocked) AND status != Closed ORDER BY priority DESC, updated ASC
+```
+
+For each bug, record: key, summary, labels (= lifecycle stage), component, priority, assignee, days since last update.
+
+Group by stage:
+- UpdateRecommendationsBlocked (active blocks)
+- ImpactStatementProposed (waiting on OTA review)
+- ImpactStatementRequested (waiting on component teams)
+- UpgradeBlocker only (new/untriaged)
 
 ### Source 2: Items waiting on component teams
-Filter from Source 1: ImpactStatementRequested. Days waiting, team, reminder status.
+
+Filter from Source 1: bugs with ImpactStatementRequested label. For each:
+- Days waiting (since [OTA-Monitor] Spike offered comment timestamp)
+- Component team (from bug's component field)
+- Whether a reminder has been posted (check for stale reminder comments)
 
 ### Source 3: Resolved this week
-JQL: `project = OCPBUGS AND labels in (UpgradeBlocker) AND status = Closed AND resolved >= -7d`
+
+Use `query_jira` with:
+```
+project = OCPBUGS AND labels in (UpgradeBlocker) AND status = Closed AND resolved >= -7d ORDER BY resolved DESC
+```
+
+Record: key, summary, resolution, fix version.
 
 ### Source 4: Open PRs in openshift/cincinnati-graph-data
-GitHub API. PR number, title, age, CI status, review status.
+
+Search GitHub for open PRs. Record: PR number, title, age (days since opened), CI status, review status (approved/changes requested/pending).
 
 ### Source 5: Merged PRs this week
-GitHub API, "blocked-edges" in title, last 7 days.
+
+Search GitHub for PRs merged in the last 7 days in openshift/cincinnati-graph-data with "blocked-edges" in the title. Record: PR number, title, merge date.
 
 ### Source 6: Pipeline health
-Indexed Slack #osus-graph-data-automation, last 7 days. FAILEDs count, with/without PRs.
-Stale "Recommend waiting" messages >14 days.
+
+Search indexed Slack history from #osus-graph-data-automation for messages in the last 7 days. Count: total FAILEDs, FAILEDs with associated PRs, FAILEDs without PRs, Recommend waiting messages.
 
 ### Source 7: Bot activity metrics
-Scan OCPBUGS for [OTA-Monitor] comments, last 7 days. Count by type.
+
+Use `query_jira` to search OCPBUGS bugs for comments matching `[OTA-Monitor]` from the last 7 days. Count by type:
+- Spike offered (alerts posted)
+- Spike created (spikes created)
+- Review offered (review buttons posted)
+- Blocked: (PRs linked after merge)
+- fixedIn: (fixedIn updates)
+- Response detected (auto-transitions)
 
 ### Source 8: Feedback signals
-OTA-MONITOR-FEEDBACK ticket comments, last 7 days. SKIPs, manual interventions.
+
+Use `get_jira_issue` on the OTA-MONITOR-FEEDBACK ticket. Read comments from the last 7 days. Count:
+- SKIP signals (potential false positives)
+- Manual interventions (things bot missed)
+- Handover edits
+
+If the feedback ticket doesn't exist yet, note "Feedback tracking not yet configured" and skip this section.
 
 ### Source 9: Latency metric (approximate)
-Latency = Spike offered timestamp − bug updated timestamp. Report avg/max.
+
+For each bug where `[OTA-Monitor] Spike offered` exists, calculate approximate latency:
+- Latency = `[OTA-Monitor] Spike offered` comment timestamp minus the bug's `updated` timestamp at the time the Spike was offered
+- This is approximate — Jira doesn't expose per-label timestamps directly
+- Report average and max latency across all bugs this week
+- If latency is consistently hours (not minutes), the bot is a true safety net (human acted first). If latency is near zero, the bot is the primary detector — consider increasing scan frequency.
+- If data is insufficient (fewer than 2 bugs), note "Insufficient data for latency tracking" and skip.
 
 ## Output Format
 
-HTML artifact via `send_html_to_thread` + text summary to channel.
+Render the handover as an HTML artifact using `send_html_to_thread` for proper table formatting. Also post a text summary to the channel.
 
-Sections: Immediate Attention, Active Blockers by Stage, Waiting on Teams, Waiting on OTA, Resolved, PRs (Open + Merged), Pipeline Health, Bot Performance, Key Contacts, Notes for Incoming Monitor.
+### Text summary (channel top-level):
+
+```
+@ota-monitor — OTA RIT Handover — Week of {MONDAY_DATE} to {FRIDAY_DATE}
+
+Active blockers: {N} | Resolved this week: {N}
+Open PRs: {N} | Merged PRs: {N}
+Items needing immediate attention: {N}
+
+Full report attached below ⬇️
+```
+
+### HTML artifact sections:
+
+**Immediate Attention Required**
+Items the incoming monitor should act on first thing Monday. For each:
+- Bug/PR link
+- What needs to happen
+- Exact command or button to use
+
+**Active Upgrade Blockers by Stage**
+Table with: Bug, Summary, Stage, Component, Priority, Days in Stage
+Sorted by days-in-stage descending (oldest first).
+
+**Items Waiting on Component Teams**
+Table with: Bug, Summary, Team, Days Waiting, Last Reminder
+Highlight any >7 days (escalation territory).
+
+**Items Waiting on OTA Review**
+Table with: Bug, Summary, Spike Link, Days Waiting
+
+**Resolved This Week**
+Table with: Bug, Summary, Resolution, Fix Version
+
+**Graph-Data PRs**
+Open: Table with PR, Title, Age, CI, Review
+Merged: Table with PR, Title, Merged Date
+
+**Pipeline Health**
+- Total FAILEDs this week: {N}
+- FAILEDs with PRs: {N} (handled)
+- FAILEDs without PRs: {N} (gaps)
+- Notable failures: brief summary if any
+- Stale "Recommend waiting" messages: list any advisories that have been in "Recommend waiting" status for >14 days. These are unusual and worth the incoming monitor's attention.
+
+**Bot Performance**
+Table with:
+| Metric | Count |
+| Alerts posted | {N} |
+| Spikes created | {N} |
+| Review buttons posted | {N} |
+| PRs linked | {N} |
+| fixedIn updates | {N} |
+| Auto-transitions | {N} |
+| Skips (potential FPs) | {N} |
+| Missed detections | {N} |
+| Avg detection latency | {N}h |
+| Max detection latency | {N}h |
+
+**Key Contacts**
+- OTA team: #forum-ocp-updates
+- Pipeline: #osus-graph-data-automation
+- Bot issues: #chai-users
+- Escalation: tag OTA reviewers in PR, or ping @ota-monitor
+
+**Notes for Incoming Monitor**
+- Any in-flight items that need context
+- Any unusual patterns observed this week
+- Any skill prompt adjustments recommended
 
 ## Verification
 
-Active Blockers count == Source 1 JQL count. Flag mismatches.
+After generating the handover, verify:
+- Count of bugs in "Active Blockers" sections == count from Source 1 JQL
+- Count of "Resolved" == count from Source 3 JQL
+- Count of "Open PRs" == count from Source 4 GitHub query
+
+If any count doesn't match, flag it in the output: "⚠️ Count mismatch: handover shows {X} but query returned {Y}. Data may be incomplete."
 
 ## Error Handling
 
-- Query fails → [DATA UNAVAILABLE] marker. Never empty handover.
+- If a JQL query fails: include the section header with "[DATA UNAVAILABLE — Jira API error]" instead of omitting the section entirely
+- If GitHub query fails: same pattern
+- If Slack search fails: note "Pipeline health data unavailable this week"
+- NEVER produce an empty handover. Always post something, even if partial.
 
 ## Bounds
 
-- >100 blockers → top 20 by priority
-- >200 feedback comments → last 50
-- Taking too long → post with [PARTIAL] markers
+- If >100 active blockers (unusual): show top 20 by priority, note total count
+- If feedback ticket has >200 comments: read only the last 50
+- Max execution time: if gathering is taking very long, post what you have with [PARTIAL] markers
