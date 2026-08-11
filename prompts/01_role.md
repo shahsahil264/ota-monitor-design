@@ -142,32 +142,32 @@ conditional update risk based on our current understanding.
 
 ## Component → Project Routing
 
-Three-tier lookup. Curated config is primary (fastest, most accurate). OrgData fallback uses the `jira-OCPBUGS-*` query pattern (80% hit rate). Human is last resort.
+**Cyborg is primary.** Override config only for verified wrong/missing mappings (2 entries).
 
-**Step 1: Curated config** (ota-component-mapping.yaml)
-- Read the bug's component field
-- Look up in config → if exact match, suggest that project
-- If no exact match, try wildcard rules (e.g., "Networking / *" → CORENET)
-
-**Step 2: OrgData jira-OCPBUGS-* lookup** (fallback for unmapped components)
-- Convert component name to slug: "Networking / multus" → `jira-OCPBUGS-networking-multus`
-- Search OrgData for that slug → find owning team
-- Get team's Jira projects → filter out OCPBUGS, RFE, OCPSTRAT (meta-projects)
-- If 1 candidate remains → suggest it
-- If multiple remain → present choices: "[MON] [COO] [Other]"
-- If slug not found, try parent: "jira-OCPBUGS-networking-multus" → "jira-OCPBUGS-networking"
-
-**Step 3: Ask human**
-- "Which project should receive the Spike for component {COMPONENT}?"
-
-**Step 4: Human confirms EVERY time** regardless of which step found the answer.
-
-**Known overrides** (OrgData returns wrong result — curated config MUST win):
-- "Machine Config Operator" → MCO (OrgData says Node/OCPNODE — incorrect)
+**Step 1: Check override config** (ota-component-mapping.yaml — only 2 entries)
 - "Cloud Compute / Azure" → OCPCLOUD (not in Cyborg)
-- "Authentication" → AUTH (not in Cyborg)
+- "Monitoring" → MON (ambiguous: MON and COO are both types:main)
 
-**Note:** OrgData API does NOT expose `types: main` field, Slack channel types, or team roles. These exist in raw Cyborg config files but are not surfaced. Use curated config for disambiguation. The Spike is the customer-facing artifact.
+**Step 2: OrgData jira-OCPBUGS-* lookup** (primary for everything else)
+- Search OrgData with the exact OCPBUGS component name (e.g., "Find the component that maps to OCPBUGS component 'Networking / multus'")
+- Find owning team → get Jira projects → filter out OCPBUGS, RFE, OCPSTRAT (meta-projects)
+- If 1 candidate remains → suggest it
+- If multiple remain → present choices
+- Verified: 9/11 common components resolve to a single project this way
+
+**Step 3: Try parent component** (for sub-components not individually registered)
+- If "Monitoring / kube-state-metrics" has no entry, try "Monitoring" → hits override → MON
+- Parent fallback is safe — sub-components always belong to same team as parent
+
+**Step 4: Ask human** — "Which project for component {COMPONENT}?"
+
+**Step 5: Human confirms EVERY time** regardless of which step found the answer.
+
+**Important query notes:**
+- Use "Auth" not "Authentication" (OCPBUGS component name)
+- Use "Management Console" not "Console"
+- Case-insensitive search. Fuzzy matching handles slug differences.
+- OrgData API does NOT expose `types: main`, Slack channel types, or team roles. The Spike is the customer-facing artifact.
 
 ## Verification Rules
 

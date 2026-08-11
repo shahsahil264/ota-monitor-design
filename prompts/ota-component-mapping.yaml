@@ -1,119 +1,54 @@
-# OTA Component → Jira Project + Slack Mapping
-# Source: Historical Spike analysis (50+ UpgradeBlockers) + OrgData verification (Aug 2026)
-# Review quarterly — run: type = Spike AND summary ~ "Impact statement request" AND labels = UpgradeBlocker
+# OTA Component → Project Routing
 #
-# Routing priority:
-#   1. This config file (deterministic, data-driven)
-#   2. OrgData jira-OCPBUGS-* lookup → filter out OCPBUGS/RFE → suggest (80% hit rate)
+# CYBORG IS PRIMARY. This file contains ONLY overrides for known-bad mappings.
+# Everything else comes from Cyborg jira-OCPBUGS-* lookups (official, team-maintained).
+#
+# Routing algorithm:
+#   1. Check overrides below (2 entries — verified cases where Cyborg is wrong/missing)
+#   2. OrgData jira-OCPBUGS-* lookup → filter out OCPBUGS/RFE/OCPSTRAT → if 1 result, suggest
 #   3. Try parent component (e.g., jira-OCPBUGS-networking if sub-component not found)
-#   4. Ask OTA Monitor manually (last resort)
+#   4. Ask OTA Monitor manually
 #   5. Human confirms EVERY time
 #
-# OrgData API limitations (verified Aug 2026):
-#   - types: main field exists in Cyborg configs but NOT exposed through OrgData API
-#   - Slack channel types (forum/team_internal) NOT exposed — treat all as postable
-#   - Team roles (manager/team_lead UIDs) NOT exposed — escalation is manual
-#   - jira-OCPBUGS-* entries cover ~80% of components (up from 20% with bare names)
+# Query pattern: search OrgData for the OCPBUGS component name directly
+#   e.g., "Find the component that maps to OCPBUGS component 'Networking / multus'"
+#   Case-insensitive. Fuzzy search handles slug differences.
+#
+# When to add an override: ONLY when you've verified OrgData returns the wrong answer.
+# When to REMOVE an override: when the Cyborg data is fixed (MR merged, OrgData updated).
 
-component_to_project:
-  # Networking (all → CORENET) — verified via jira-OCPBUGS-networking-*
-  "Networking / openshift-sdn":
-    project: "CORENET"
-    slack_channel: "#forum-ocp-sdn"
-  "Networking / ovn-kubernetes":
-    project: "CORENET"
-    slack_channel: "#forum-ocp-sdn"
-  "Networking / whereabouts":
-    project: "CORENET"
-    slack_channel: "#forum-ocp-sdn"
-  "Networking / ipsec":
-    project: "CORENET"
-    slack_channel: "#forum-ocp-sdn"
-  "Multus":
-    project: "CORENET"
-    slack_channel: "#forum-ocp-sdn"
-
-  # Machine Config — OVERRIDE: OrgData maps to Node/OCPNODE (incorrect for Spikes)
-  "Machine Config Operator":
-    project: "MCO"
-    slack_channel: "#forum-ocp-mco"
-    orgdata_override: true
-    note: "OrgData returns Node team → OCPNODE. Historical Spikes go to MCO (e.g., MCO-1896)."
-
-  # Cloud Compute (all → OCPCLOUD) — OVERRIDE: not in Cyborg
+overrides:
+  # Genuinely missing from Cyborg — MR to add pending
   "Cloud Compute / Azure":
     project: "OCPCLOUD"
     slack_channel: "#forum-ocp-cloud"
-    orgdata_override: true
-    note: "jira-OCPBUGS-cloud-compute-azure not found in Cyborg."
-  "Cloud Compute / AWS":
-    project: "OCPCLOUD"
-    slack_channel: "#forum-ocp-cloud"
-  "Cloud Compute / Machine API Providers":
-    project: "OCPCLOUD"
-    slack_channel: "#forum-ocp-cloud"
+    reason: "jira-OCPBUGS-cloud-compute-azure does not exist in Cyborg"
 
-  # CoreOS / kernel — verified via jira-OCPBUGS-rhcos
-  "RHCOS":
-    project: "COS"
-    slack_channel: "#dev-coreos"
-
-  # Individual team projects — verified via jira-OCPBUGS-* lookups
+  # Ambiguous — team has 2 types:main projects (MON and COO)
   "Monitoring":
     project: "MON"
     slack_channel: "#forum-openshift-monitoring"
-    note: "OrgData returns 5 projects (COO,MON,OBSDA,OCPBUGS,RFE). MON is correct for Spikes."
-  "Console":
-    project: "CONSOLE"
-    slack_channel: "#forum-ocp-console"
-  "OLM":
-    project: "OPRUN"
-    slack_channel: "#forum-ocp-operator-fw"
-  "Authentication":
-    project: "AUTH"
-    slack_channel: null
-    orgdata_override: true
-    note: "jira-OCPBUGS-authentication not found in Cyborg."
-  "Image Registry":
-    project: "IR"
-    slack_channel: null
-  "Hosted Control Planes":
-    project: "HOSTEDCP"
-    slack_channel: null
-  "etcd":
-    project: "ETCD"
-    slack_channel: "#forum-ocp-etcd"
-  "SRIOV":
-    project: "NHE"
-    slack_channel: null
-  "Installer":
-    project: "CORS"
-    slack_channel: "#forum-ocp-installer"
+    reason: "OrgData returns MON, COO, OBSDA. Both MON and COO are types:main. Historical Spikes use MON."
 
-  # Catch-all → OCPNODE
-  "Logging":
-    project: "OCPNODE"
-    slack_channel: null
-  "Node":
-    project: "OCPNODE"
-    slack_channel: "#forum-ocp-node"
+# PREVIOUSLY OVERRIDDEN — NOW RESOLVED (Cyborg gets these right):
+# "Machine Config Operator" — MCO IS its own team. Earlier test had query phrasing issue.
+# "Authentication" — component is "Auth" not "Authentication". Search with correct name.
+# "Console" — use "Management Console" as the OCPBUGS component name. Resolves to CONSOLE.
 
-# Wildcard rules (apply when exact match fails)
-wildcard_rules:
-  "Networking / *":
-    project: "CORENET"
-    slack_channel: "#forum-ocp-sdn"
-  "Cloud Compute / *":
-    project: "OCPCLOUD"
-    slack_channel: "#forum-ocp-cloud"
+# VERIFIED CYBORG RESULTS (no override needed):
+# "Networking / multus" → jira-OCPBUGS-networking-multus → Core Networking → CORENET ✅
+# "Networking / ovn-kubernetes" → jira-OCPBUGS-networking-ovn-kubernetes → Core Networking → CORENET ✅
+# "Machine Config Operator" → jira-OCPBUGS-Machine-Config-Operator → MCO → MCO ✅
+# "Auth" → jira-OCPBUGS-auth → Auth team → AUTH ✅
+# "Management Console" → jira-OCPBUGS-Management-Console → Console → CONSOLE ✅
+# "etcd" → jira-OCPBUGS-etcd → etcd → ETCD ✅
+# "Installer / openshift-installer" → jira-OCPBUGS-installer-openshift-installer → Installer → CORS ✅
+# "OLM" → jira-OCPBUGS-olm → OLM → OPRUN ✅
+# "RHCOS" → jira-OCPBUGS-rhcos → CoreOS → COS ✅
 
-# OrgData fallback query pattern:
-#   1. Convert: "Networking / multus" → "jira-OCPBUGS-networking-multus"
-#   2. Search OrgData for that slug
-#   3. If found → get team → list projects → filter out OCPBUGS/RFE/OCPSTRAT
-#   4. If 1 candidate → suggest. If multiple → present choices.
-#   5. If not found → try parent: strip last segment, retry
-#   6. If still not found → ask human
+# Wildcard rules (for sub-components not individually registered):
+# Parent fallback is safe — sub-components always belong to the same team as parent.
+# "Networking / *" parent: jira-OCPBUGS-networking → Core Networking → CORENET
+# "Cloud Compute / *" parent: varies — most have individual entries except Azure
 
-# Default when no match found
 default: "ASK_HUMAN"
