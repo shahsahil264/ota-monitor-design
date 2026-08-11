@@ -102,10 +102,10 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 <h2>Manual vs Bot</h2>
 <table>
 <tr><th>Step</th><th>Today</th><th>With Bot</th><th>Effort</th></tr>
-<tr><td><strong>Check dashboard + pipeline</strong></td><td>Open URL, read Slack</td><td>9am scan, alerts posted</td><td><span class="badge bg">Auto</span></td></tr>
+<tr><td><strong>Check dashboard + pipeline</strong></td><td>Open URL, read Slack</td><td>10:00 UTC scan, alerts posted</td><td><span class="badge bg">Auto</span></td></tr>
 <tr><td><strong>Find team/project</strong></td><td>Research component, ask in Slack</td><td>OrgData suggests, you confirm</td><td><span class="badge bb">1 click</span></td></tr>
 <tr><td><strong>Create Spike</strong></td><td>Go command with 5 flags</td><td>[Create Spike in MON]</td><td><span class="badge bb">1 click</span></td></tr>
-<tr><td><strong>Track response</strong></td><td>Check Spike status daily</td><td>Bot checks 9am/3pm, reminds at 48h</td><td><span class="badge bg">Auto</span></td></tr>
+<tr><td><strong>Track response</strong></td><td>Check Spike status daily</td><td>Bot checks twice daily, reminds at 48h</td><td><span class="badge bg">Auto</span></td></tr>
 <tr><td><strong>Transition labels</strong></td><td>Go command</td><td>Auto when Spike moves to Code Review</td><td><span class="badge bg">Auto</span></td></tr>
 <tr><td><strong>Review impact statement</strong></td><td>Read answers, decide</td><td>Same &#8212; you still decide</td><td><span class="badge by">You</span></td></tr>
 <tr><td><strong>Create blocked-edge PR</strong></td><td>/propose-risk + git + gh (~20 min)</td><td>[Accept &#8212; Block Edge]</td><td><span class="badge bb">1 click</span></td></tr>
@@ -139,10 +139,10 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 <p style="font-size:12px;color:var(--t3)">Bot auto-detected response. You review answers, click <strong>[Accept]</strong>. Bot generates YAML, validates, opens PR.</p>
 </div>
 <div class="c">
-<h3>Friday 4pm &#8212; Handover</h3>
+<h3>Friday &#8212; Handover</h3>
 <p style="color:var(--t3)">Auto-generated HTML: bugs by stage, PRs, pipeline, bot metrics, tool commands for next monitor.</p>
 </div>
-<p style="font-size:13px;color:var(--t3)"><strong>Daily: ~2-5 min.</strong> Read 9am status. Click if needed. 3pm usually silent. Friday: review handover.</p>
+<p style="font-size:13px;color:var(--t3)"><strong>Daily: ~2-5 min.</strong> Read morning status. Click if needed. Evening run usually silent. Friday: review handover.</p>
 </div>
 
 <div class="sec">
@@ -219,8 +219,8 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 <span style="color:var(--blue)">CHAI BOT PERSONA (ota_monitor)</span>
 
 <span style="color:var(--green)">SCHEDULED</span>                          <span style="color:var(--purple)">BUTTON-DRIVEN</span>
-&#9500;&#9472; 9am: Enriched scan              &#9500;&#9472; Gate 1: Create Spike
-&#9500;&#9472; 3pm: Brief scan                 &#9500;&#9472; Gate 2: Accept&#8212;Block Edge
+&#9500;&#9472; 10:00 UTC: Enriched scan              &#9500;&#9472; Gate 1: Create Spike
+&#9500;&#9472; 22:00 UTC: Brief scan                 &#9500;&#9472; Gate 2: Accept&#8212;Block Edge
 &#9492;&#9472; Fri: Weekly handover             &#9500;&#9472; Gate 3: Add FixedIn
                                      &#9500;&#9472; Gate 4: Extend Risk
                                      &#9492;&#9472; Auto: Close Spike
@@ -269,7 +269,7 @@ openshift/cincinnati-graph-data (blocked-edges/, /propose-risk)
 <h2 style="margin-top:32px;margin-bottom:12px">Four Skills</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
 <div class="c">
-<h3>Skill 1: Monitor <span class="badge bg">9am + 3pm</span></h3>
+<h3>Skill 1: Monitor <span class="badge bg">10:00 + 22:00 UTC</span></h3>
 <p style="font-size:12px">Three-pass filtering: <code>query_jira</code> (cheap) &#8594; filter by labels &#8594; <code>get_jira_issue</code> on candidates only. 10 detection rules with short-circuit (STOP at first match). Pipeline FAILED check (best-effort). Heartbeat every run.</p>
 </div>
 <div class="c">
@@ -281,7 +281,7 @@ openshift/cincinnati-graph-data (blocked-edges/, /propose-risk)
 <p style="font-size:12px">5 phases: setup (fork) &#8594; generate (/propose-risk) &#8594; PR (approval-gated) &#8594; monitor (event/scan) &#8594; post-merge (labels + close Spike). Branch: <code>blocked-edges/OCPBUGS-X-{action}</code></p>
 </div>
 <div class="c">
-<h3>Skill 4: Handover <span class="badge bp">Friday 4pm</span></h3>
+<h3>Skill 4: Handover <span class="badge bp">Friday 22:00 UTC</span></h3>
 <p style="font-size:12px">Two phases: gather from 9 sources (compact every 3) &#8594; synthesize HTML. Deterministic data only. Cross-check counts. Never empty handover.</p>
 </div>
 </div>
@@ -353,8 +353,8 @@ Key rules:
 </div>
 
 <div class="pf">
-<div class="pf-h" onclick="toggle(this)"><h3>monitor-enriched.md <span class="badge bg">9am Task</span></h3><span class="arrow">&#9654;</span></div>
-<div class="pf-body">8-step pipeline. Runs every weekday at 9am ET. Always posts.
+<div class="pf-h" onclick="toggle(this)"><h3>monitor-enriched.md <span class="badge bg">10:00 UTC Task</span></h3><span class="arrow">&#9654;</span></div>
+<div class="pf-body">8-step pipeline. Runs every weekday at 10:00 UTC. Always posts.
 
 Step 1: Two JQL queries (primary: active bugs, secondary: fixedIn candidates)
 Step 2: Filter by labels &#8212; only inspect bugs that MIGHT need action
@@ -377,7 +377,7 @@ Step 8: Error reporting</div>
 </div>
 
 <div class="pf">
-<div class="pf-h" onclick="toggle(this)"><h3>monitor-brief.md <span class="badge by">3pm Task</span></h3><span class="arrow">&#9654;</span></div>
+<div class="pf-h" onclick="toggle(this)"><h3>monitor-brief.md <span class="badge by">22:00 UTC Task</span></h3><span class="arrow">&#9654;</span></div>
 <div class="pf-body">Same Steps 1-6 as enriched. Differences:
 
 &#8226; NO daily status section (if composing one, STOP)
@@ -387,7 +387,7 @@ Step 8: Error reporting</div>
 
 <div class="pf">
 <div class="pf-h" onclick="toggle(this)"><h3>weekly-handover.md <span class="badge bp">Friday Task</span></h3><span class="arrow">&#9654;</span></div>
-<div class="pf-body">Two phases. Runs Friday 4pm ET. Always posts.
+<div class="pf-body">Two phases. Runs Friday 22:00 UTC ET. Always posts.
 
 PHASE 1 &#8212; Data gathering (compact every 3 sources):
   Source 1: Active blockers by stage (JQL)
