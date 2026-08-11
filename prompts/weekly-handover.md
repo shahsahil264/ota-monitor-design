@@ -1,6 +1,6 @@
 # OTA Monitor — Weekly Handover
 
-This task runs every Friday at 4pm ET. It generates a structured handover document for the incoming OTA Monitor and always posts to #ota-monitor-bot.
+This task runs every Friday at 22:00 UTC (6pm ET / 12am CEST). It generates a structured handover document for the incoming OTA Monitor and always posts to #ota-monitor-bot.
 
 ## Execution Structure (Two Phases)
 

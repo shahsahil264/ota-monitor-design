@@ -1,6 +1,6 @@
 # OTA Monitor — 3pm Brief Scan
 
-This task runs every weekday at 3pm ET. It posts ONLY if something needs action. If nothing changed since the 9am run, it stays silent (heartbeat to thread only).
+This task runs every weekday at 22:00 UTC (6pm ET / 12am CEST). It posts ONLY if something needs action. If nothing changed since the 9am run, it stays silent (heartbeat to thread only).
 
 ## Execution
 
