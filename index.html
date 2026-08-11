@@ -10,7 +10,15 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);line-height:1.7;overflow-x:hidden}
 .w{max-width:880px;margin:0 auto;padding:0 24px}
-.hero{min-height:90vh;display:flex;flex-direction:column;justify-content:center}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(9,9,11,0.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--s3);padding:0 24px;display:flex;align-items:center;height:48px}
+nav .logo{font-weight:700;font-size:14px;margin-right:24px;white-space:nowrap}
+nav .logo span{color:var(--blue)}
+nav button{background:none;border:none;color:var(--t3);padding:12px 14px;cursor:pointer;font-size:13px;font-family:'Inter',sans-serif;font-weight:500;border-bottom:2px solid transparent;transition:all 0.2s}
+nav button:hover{color:var(--t2)}
+nav button.active{color:var(--t1);border-bottom-color:var(--blue)}
+.tab{display:none;animation:fadeIn 0.3s ease}.tab.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.hero{min-height:85vh;display:flex;flex-direction:column;justify-content:center;padding-top:48px}
 .hero h1{font-size:clamp(36px,5vw,56px);font-weight:800;letter-spacing:-2px;line-height:1.1}
 .hero h1 span{background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hero p{font-size:17px;color:var(--t2);margin-top:12px;max-width:520px}
@@ -19,7 +27,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);line-he
 .sec{padding:64px 0;border-top:1px solid var(--s2)}
 .sl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--blue);margin-bottom:6px}
 h2{font-size:24px;font-weight:700;margin-bottom:6px}
-.desc{color:var(--t2);font-size:14px;margin-bottom:24px}
 h3{font-size:16px;font-weight:600;margin-bottom:6px}
 p{color:var(--t2);margin-bottom:10px;font-size:14px}
 strong{color:var(--t1)}
@@ -58,13 +65,27 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 .ck{display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:13px}
 .ci{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;margin-top:2px}
 .cd{background:rgba(34,197,94,0.15);color:var(--green)}.ct{background:var(--s2);color:var(--t3);border:1px solid var(--s3)}
+.pf{background:var(--s1);border:1px solid var(--s3);border-radius:10px;padding:20px;margin-bottom:16px}
+.pf-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;cursor:pointer}
+.pf-h h3{margin:0}.pf-h .arrow{color:var(--t3);transition:transform 0.3s;font-size:12px}
+.pf-h.open .arrow{transform:rotate(90deg)}
+.pf-body{display:none;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;color:var(--t2);white-space:pre-wrap;max-height:400px;overflow-y:auto;padding:16px;background:var(--bg);border-radius:8px;border:1px solid var(--s3)}
+.pf-body.open{display:block}
 @media(max-width:768px){.grid-3{grid-template-columns:1fr}.flow{flex-direction:column}.fb{border-radius:0!important}.stats{flex-direction:column;gap:12px}}
 </style>
 </head>
 <body>
+
+<nav>
+<div class="logo"><span>OTA</span> Monitor</div>
+<button class="active" onclick="showTab('design')">Design</button>
+<button onclick="showTab('prompts')">Prompt Files</button>
+</nav>
+
+<!-- TAB 1: DESIGN -->
+<div class="tab active" id="design">
 <div class="w">
 
-<!-- HERO -->
 <div class="hero">
 <h1>OTA Monitor<br><span>Agentic System</span></h1>
 <p>Chai Bot automates the UpgradeBlocker lifecycle. You approve with a click.</p>
@@ -75,11 +96,9 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 </div>
 </div>
 
-<!-- SECTION 1: BEFORE & AFTER -->
 <div class="sec">
 <div class="sl">The Change</div>
 <h2>Manual vs Bot</h2>
-
 <table>
 <tr><th>Step</th><th>Today</th><th>With Bot</th><th>Effort</th></tr>
 <tr><td><strong>Check dashboard + pipeline</strong></td><td>Open URL, read Slack</td><td>9am scan, alerts posted</td><td><span class="badge bg">Auto</span></td></tr>
@@ -90,79 +109,44 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 <tr><td><strong>Review impact statement</strong></td><td>Read answers, decide</td><td>Same &#8212; you still decide</td><td><span class="badge by">You</span></td></tr>
 <tr><td><strong>Create blocked-edge PR</strong></td><td>/propose-risk + git + gh (~20 min)</td><td>[Accept &#8212; Block Edge]</td><td><span class="badge bb">1 click</span></td></tr>
 <tr><td><strong>Post-merge cleanup</strong></td><td>Go command, close Spike manually</td><td>Automatic: labels + comments + Spike closed</td><td><span class="badge bg">Auto</span></td></tr>
-<tr><td><strong>Detect fixedIn</strong></td><td>Notice ART Bot comment (often missed)</td><td>Secondary JQL catches it</td><td><span class="badge bg">Auto</span></td></tr>
-<tr><td><strong>Add fixedIn / extend risk</strong></td><td>Go command + PR (~15 min)</td><td>[Add FixedIn] or [Extend Risk]</td><td><span class="badge bb">1 click</span></td></tr>
+<tr><td><strong>Detect + add fixedIn</strong></td><td>Notice ART Bot comment, Go command</td><td>Bot detects, you click [Add FixedIn]</td><td><span class="badge bb">1 click</span></td></tr>
 <tr><td><strong>Write handover</strong></td><td>Manual (~30 min)</td><td>Auto-generated HTML</td><td><span class="badge bg">Auto</span></td></tr>
 </table>
-
 <table style="margin-top:16px">
 <tr><th>Frequency</th><th>Edge Case</th><th>Bot?</th></tr>
-<tr><td><span class="badge br">Weekly</span></td><td>Risk extension needed (new z-stream)</td><td><span class="badge bg">[Extend Risk]</span></td></tr>
-<tr><td><span class="badge br">Weekly</span></td><td>Phantom FAILEDs (race conditions)</td><td><span class="badge bg">VK: check PR first</span></td></tr>
-<tr><td><span class="badge br">Weekly</span></td><td>Stale impact statements (no response)</td><td><span class="badge bg">48h/7d reminders</span></td></tr>
+<tr><td><span class="badge br">Weekly</span></td><td>Risk extension / phantom FAILEDs / stale statements</td><td><span class="badge bg">Handled</span></td></tr>
 <tr><td><span class="badge by">Monthly</span></td><td>Merge conflicts / wrong project / not a blocker</td><td><span class="badge bb">Alert or button</span></td></tr>
 <tr><td><span class="badge bp">Rare</span></td><td>Wrong scope, wrong fixedIn, two bugs one risk</td><td><span class="badge by">Manual/v2</span></td></tr>
 </table>
 </div>
 
-<!-- YOUR DAY WITH THE BOT -->
 <div class="sec">
 <div class="sl">Your Day</div>
 <h2>OTA Monitor + Chai Bot in Slack</h2>
-
 <div class="c">
 <h3 style="margin-bottom:12px">9:00 AM &#8212; Open #ota-monitor-bot</h3>
-<div class="sk">
-<strong>OTA Monitor</strong> &#8212; Daily Status &#8212; Aug 11<br><br>
-Active Upgrade Blockers: 3<br>
-&nbsp;&nbsp;UpdateRecommendationsBlocked: 1<br>
-&nbsp;&nbsp;ImpactStatementRequested: 1 (stale &#8212; 12 days)<br>
-&nbsp;&nbsp;UpgradeBlocker (new): 1<br><br>
-Open PRs: 1 (#10074, awaiting review)<br>
-Pipeline: healthy<br><br>
-&#9888;&#65039; STALE: OCPBUGS-86033 &#8212; no response in 12 days. Team: Networking.<br><br>
-New UpgradeBlocker: OCPBUGS-104449 &#8212; pacemaker etcd failure<br>
-Suggested project: OCPEDGE<br>
-<span class="sb g">Create in OCPEDGE</span> <span class="sb n">Skip</span> <span class="sb r">Escalate</span>
+<div class="sk"><strong>OTA Monitor</strong> &#8212; Daily Status<br><br>Active Upgrade Blockers: 3<br>&nbsp;&nbsp;UpdateRecommendationsBlocked: 1<br>&nbsp;&nbsp;ImpactStatementRequested: 1 (stale &#8212; 12 days)<br>&nbsp;&nbsp;UpgradeBlocker (new): 1<br><br>Open PRs: 1 | Pipeline: healthy<br><br>&#9888;&#65039; STALE: OCPBUGS-86033 &#8212; 12 days, Networking team tagged.<br><br>New UpgradeBlocker: OCPBUGS-104449 &#8212; pacemaker etcd failure<br>Suggested: OCPEDGE<br><span class="sb g">Create in OCPEDGE</span> <span class="sb n">Skip</span> <span class="sb r">Escalate</span></div>
+<p style="font-size:12px;color:var(--t3)">Read (~30s). Click <strong>[Create in OCPEDGE]</strong>. Bot creates Spike, links, labels. Done.</p>
 </div>
-<p style="font-size:12px;color:var(--t3)">You read the status (~30 sec). OCPEDGE looks right. You click <strong>[Create in OCPEDGE]</strong>. Bot creates the Spike, links it, adds labels, posts confirmation. Done.</p>
-</div>
-
 <div class="c">
-<h3 style="margin-bottom:12px">3:00 PM &#8212; Check Slack</h3>
-<p style="font-size:13px;color:var(--t3)">Nothing changed since 9am. Channel is silent. Bot posted a heartbeat to a thread: "&#10003; No changes." You move on.</p>
+<h3>3:00 PM</h3>
+<p style="color:var(--t3)">Silent. Nothing changed. Heartbeat in thread: "&#10003; No changes."</p>
 </div>
-
 <div class="c">
-<h3 style="margin-bottom:12px">2 days later &#8212; Team responds</h3>
-<div class="sk">
-<strong>OTA Monitor</strong><br><br>
-Impact Statement Ready &#8212; OCPBUGS-104449<br>
-Affected: 4.21.x | Scope: baremetal clusters only<br><br>
-<span class="sb g">Accept&#8212;Block Edge</span> <span class="sb n">Revise</span> <span class="sb r">Not a Blocker</span>
+<h3 style="margin-bottom:12px">Days later &#8212; Team responds</h3>
+<div class="sk"><strong>Impact Statement Ready</strong> &#8212; OCPBUGS-104449<br>Affected: 4.21.x | Scope: baremetal only<br><br><span class="sb g">Accept&#8212;Block Edge</span> <span class="sb n">Revise</span> <span class="sb r">Not a Blocker</span></div>
+<p style="font-size:12px;color:var(--t3)">Bot auto-detected response. You review answers, click <strong>[Accept]</strong>. Bot generates YAML, validates, opens PR.</p>
 </div>
-<p style="font-size:12px;color:var(--t3)">Bot auto-detected the response (no click needed for that). You review the answers. Click <strong>[Accept&#8212;Block Edge]</strong>. Bot spins up workspace, generates YAML, validates, opens PR. You see a diff preview in the thread.</p>
-</div>
-
 <div class="c">
-<h3 style="margin-bottom:12px">Friday 4:00 PM &#8212; Handover auto-generated</h3>
-<div class="sk">
-<strong>OTA Monitor</strong> &#8212; Weekly Handover<br><br>
-&#128203; Active blockers: 2 | Resolved: 1<br>
-Open PRs: 1 | Items needing attention: 1<br><br>
-Full HTML report attached &#8595;
+<h3>Friday 4pm &#8212; Handover</h3>
+<p style="color:var(--t3)">Auto-generated HTML: bugs by stage, PRs, pipeline, bot metrics, tool commands for next monitor.</p>
 </div>
-<p style="font-size:12px;color:var(--t3)">HTML artifact with tables: all bugs by stage, PRs, pipeline health, bot metrics, exact commands for the next monitor. You review, maybe add a note. Done.</p>
+<p style="font-size:13px;color:var(--t3)"><strong>Daily: ~2-5 min.</strong> Read 9am status. Click if needed. 3pm usually silent. Friday: review handover.</p>
 </div>
 
-<p style="font-size:13px;color:var(--t3)"><strong>Total daily effort: ~2-5 minutes.</strong> Read the 9am status. Click a button if needed. Check 3pm (usually silent). Friday: review handover.</p>
-</div>
-
-<!-- SECTION 2: LIFECYCLE + GATES -->
 <div class="sec">
 <div class="sl">How It Works</div>
 <h2>Lifecycle + Your 3 Clicks</h2>
-
 <div class="flow">
 <div class="fb" style="border-bottom:3px solid var(--yellow)"><strong>UpgradeBlocker</strong><small>Suspect</small></div>
 <div class="fa">&#8594;</div>
@@ -174,130 +158,145 @@ Full HTML report attached &#8595;
 <div class="fa">&#8594;</div>
 <div class="fb" style="border-bottom:3px solid var(--green)"><strong>fixedIn</strong><small>Done</small></div>
 </div>
-
-<p style="font-size:12px;color:var(--t3)"><strong style="color:var(--green)">UpgradeBlocker</strong> stays forever. <strong style="color:var(--blue)">Lifecycle labels</strong> swap (ADD next first, REMOVE previous &#8212; crash-safe).</p>
-
+<p style="font-size:12px;color:var(--t3)"><strong style="color:var(--green)">UpgradeBlocker</strong> stays forever. <strong style="color:var(--blue)">Lifecycle labels</strong> swap (ADD first, REMOVE second &#8212; crash-safe).</p>
 <div class="grid-3" style="margin-top:20px">
-<div class="c" style="border-top:3px solid var(--green);text-align:center">
-<p style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Gate 1</p>
-<h3>Create Spike</h3>
-<p style="font-size:12px">"Right team?"</p>
-<div><span class="sb g">Create in MON</span><span class="sb n">Skip</span></div>
+<div class="c" style="border-top:3px solid var(--green);text-align:center"><p style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Gate 1</p><h3>Create Spike</h3><p style="font-size:12px">"Right team?"</p><div><span class="sb g">Create in MON</span><span class="sb n">Skip</span></div></div>
+<div class="c" style="border-top:3px solid var(--purple);text-align:center"><p style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Gate 2</p><h3>Accept &#8212; Block Edge</h3><p style="font-size:12px">"Really a blocker?" Auto-triggers PR.</p><div><span class="sb g">Accept</span><span class="sb n">Revise</span><span class="sb r">Not a Blocker</span></div></div>
+<div class="c" style="border-top:3px solid var(--yellow);text-align:center"><p style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Gate 3</p><h3>Add FixedIn</h3><p style="font-size:12px">"Right fix version?"</p><div><span class="sb g">Add FixedIn</span><span class="sb n">Skip</span></div></div>
 </div>
-<div class="c" style="border-top:3px solid var(--purple);text-align:center">
-<p style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Gate 2</p>
-<h3>Accept &#8212; Block Edge</h3>
-<p style="font-size:12px">"Really a blocker?" Auto-triggers PR.</p>
-<div><span class="sb g">Accept</span><span class="sb n">Revise</span><span class="sb r">Not a Blocker</span></div>
-</div>
-<div class="c" style="border-top:3px solid var(--yellow);text-align:center">
-<p style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Gate 3</p>
-<h3>Add FixedIn</h3>
-<p style="font-size:12px">"Right fix version?"</p>
-<div><span class="sb g">Add FixedIn</span><span class="sb n">Skip</span></div>
-</div>
+<p style="font-size:12px;color:var(--t3);margin-top:12px"><strong>Automatic:</strong> label transitions, orphaned Spike closure, risk extension, post-merge cleanup, stale reminders (48h/7d).</p>
 </div>
 
-<p style="font-size:12px;color:var(--t3);margin-top:12px"><strong>Automatic:</strong> label transitions, orphaned Spike closure, risk extension ([Extend Risk] button), post-merge cleanup, stale reminders (48h/7d via OrgData).</p>
-</div>
-
-<!-- SECTION 3: WALKTHROUGH -->
-<div class="sec">
-<div class="sl">Real Example</div>
-<h2>OCPBUGS-87957 Walkthrough</h2>
-
-<div class="tl">
-<div class="tl-i"><div class="tl-l"><div class="tl-d a"></div><div class="tl-c"></div></div><div class="tl-r"><div class="tl-t">Day 1 &#8226; 9am &#8226; Bot detects</div><div class="tl-k"><p>New UpgradeBlocker. OrgData: Monitoring &#8594; MON.</p><div class="sk"><strong>New UpgradeBlocker</strong><br>OCPBUGS-87957 &#8212; kube-state-metrics timezone panic<br><br><span class="sb g">Create in MON</span> <span class="sb n">Skip</span></div></div></div></div>
-
-<div class="tl-i"><div class="tl-l"><div class="tl-d h"></div><div class="tl-c"></div></div><div class="tl-r"><div class="tl-t">Day 1 &#8226; You click</div><div class="tl-k"><p>Gate 1: Creates MON-4619 (Spike, Critical). Links. Adds ImpactStatementRequested.</p></div></div></div>
-
-<div class="tl-i"><div class="tl-l"><div class="tl-d a"></div><div class="tl-c"></div></div><div class="tl-r"><div class="tl-t">Day 3 &#8226; Auto-detect</div><div class="tl-k"><p>Team filled answers, moved Spike to Code Review. Bot auto-transitions labels. Posts:</p><div class="sk"><strong>Impact Statement Ready</strong><br>Affected: 4.20.29+, 4.21.24+, 4.22.0-6<br><br><span class="sb g">Accept&#8212;Block Edge</span> <span class="sb n">Revise</span> <span class="sb r">Not a Blocker</span></div></div></div></div>
-
-<div class="tl-i"><div class="tl-l"><div class="tl-d h"></div><div class="tl-c"></div></div><div class="tl-r"><div class="tl-t">Day 3 &#8226; You click</div><div class="tl-k"><p>Gate 2: Labels updated &#8594; workspace starts &#8594; /propose-risk &#8594; 11 YAML files &#8594; validates &#8594; PR #10074 opened.</p></div></div></div>
-
-<div class="tl-i"><div class="tl-l"><div class="tl-d b"></div><div class="tl-c"></div></div><div class="tl-r"><div class="tl-t">Day 4 &#8226; PR merges</div><div class="tl-k"><p>Post-merge: comments on bug, closes MON-4619 Spike. All automatic.</p></div></div></div>
-
-<div class="tl-i"><div class="tl-l"><div class="tl-d a"></div><div class="tl-c"></div></div><div class="tl-r"><div class="tl-t">Friday 4pm &#8226; Handover</div><div class="tl-k"><p>Auto-generated HTML report for incoming monitor.</p></div></div></div>
-
-<div class="tl-i"><div class="tl-l"><div class="tl-d a"></div><div class="tl-c"></div></div><div class="tl-r"><div class="tl-t">2 weeks later &#8226; Fix ships</div><div class="tl-k"><p>Secondary JQL detects advisory comment.</p><div class="sk">Fix detected. Version: 4.22.7<br><br><span class="sb g">Add FixedIn</span> <span class="sb n">Skip</span></div><p>You click &#8594; fixedIn added &#8594; PR &#8594; merge &#8594; label removed. <strong>Done.</strong></p></div></div></div>
-</div>
-</div>
-
-<!-- SECTION 4: DESIGN + RISKS -->
 <div class="sec">
 <div class="sl">Under the Hood</div>
 <h2>Design + Risks</h2>
-
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
 <div class="c">
 <h3>Design Decisions</h3>
-<p>3 gates, not 5 (approval fatigue)</p>
-<p>UpgradeBlocker stays forever (additive)</p>
-<p>ADD label first, REMOVE second (crash-safe)</p>
-<p>3-layer idempotency (links + comments + labels)</p>
-<p>Stateless runs (Jira IS the database)</p>
-<p>Two JQL queries (secondary for fixedIn)</p>
-<p>/propose-risk for all YAML (composition)</p>
-<p>Always Spike URL (never OCPBUGS)</p>
-<p>Stale-button check on every click</p>
-<p>Close Spike after PR merge</p>
-<p>Corrections via conversation</p>
-<p>Human primary, bot safety net</p>
+<p>3 gates, not 5 (approval fatigue)</p><p>UpgradeBlocker stays forever</p><p>ADD label first, REMOVE second</p><p>3-layer idempotency</p><p>Stateless runs (Jira = database)</p><p>Two JQL queries (secondary for fixedIn)</p><p>/propose-risk for all YAML</p><p>Always Spike URL</p><p>Stale-button check on every click</p><p>Close Spike after PR merge</p>
 </div>
 <div class="c">
 <h3>Risks (all addressed)</h3>
-<p><span class="badge bg">Fixed</span> Gate fatigue &#8594; 3 gates</p>
-<p><span class="badge bg">Fixed</span> Label conflicts &#8594; priority ordering</p>
-<p><span class="badge bg">Fixed</span> Slack fragility &#8594; best-effort, Jira unaffected</p>
-<p><span class="badge bg">Fixed</span> Button re-posting &#8594; "offered" markers</p>
-<p><span class="badge bg">Fixed</span> fixedIn JQL bug &#8594; secondary query</p>
-<p><span class="badge bg">Fixed</span> Crash safety &#8594; ADD-then-REMOVE</p>
-<p><span class="badge bg">Fixed</span> Phase 5 redundancy &#8594; split by action</p>
+<p><span class="badge bg">Fixed</span> Gate fatigue, label conflicts, Slack fragility, button re-posting, fixedIn JQL bug, crash safety, Phase 5 redundancy</p>
 <p><span class="badge by">v2</span> Version extension after fixedIn</p>
 <p><span class="badge bb">Rollout</span> Early false positives &#8594; pause if &lt;90%</p>
 </div>
 </div>
-
 <h3 style="margin-top:20px">Schedule</h3>
 <table>
-<tr><td><strong>9am ET</strong> (weekdays)</td><td>Daily status + alerts + pipeline check. Always posts.</td></tr>
-<tr><td><strong>3pm ET</strong> (weekdays)</td><td>Same checks. Posts only if action needed.</td></tr>
-<tr><td><strong>Fri 4pm ET</strong></td><td>Weekly handover. HTML report from 9 data sources.</td></tr>
+<tr><td><strong>9am ET</strong></td><td>Daily status + alerts. Always posts.</td></tr>
+<tr><td><strong>3pm ET</strong></td><td>Same checks. Silent if nothing changed.</td></tr>
+<tr><td><strong>Fri 4pm</strong></td><td>Weekly handover. HTML from 9 sources.</td></tr>
 </table>
-<p style="font-size:12px;color:var(--t3)">All output to #ota-monitor-bot. Reads #osus-graph-data-automation (indexed). No weekends.</p>
+<p style="font-size:12px;color:var(--t3)">All to #ota-monitor-bot. Reads #osus-graph-data-automation (indexed). Weekdays only.</p>
 </div>
 
-<!-- SECTION 5: ROLLOUT -->
 <div class="sec">
 <div class="sl">Getting There</div>
 <h2>Rollout</h2>
-
 <div class="flow">
-<div class="fb" style="border-bottom:3px solid var(--green)"><strong>Week 1-2</strong><small>1-2 rules, read-only</small></div>
+<div class="fb" style="border-bottom:3px solid var(--green)"><strong>Week 1-2</strong><small>Read-only alerts</small></div>
 <div class="fa">&#8594;</div>
-<div class="fb" style="border-bottom:3px solid var(--blue)"><strong>Week 3-4</strong><small>Full rules + Spikes</small></div>
+<div class="fb" style="border-bottom:3px solid var(--blue)"><strong>Week 3-4</strong><small>Spikes + labels</small></div>
 <div class="fa">&#8594;</div>
 <div class="fb" style="border-bottom:3px solid var(--purple)"><strong>Week 5-6</strong><small>Workspace PRs</small></div>
 <div class="fa">&#8594;</div>
 <div class="fb" style="border-bottom:3px solid var(--yellow)"><strong>Week 7+</strong><small>Full automation</small></div>
 </div>
-
-<h3 style="margin-top:20px">Checklist</h3>
-<div class="c">
-<div class="ck"><div class="ci cd">&#10003;</div><div>#ota-monitor-bot + #test-ota-monitor-bot created</div></div>
-<div class="ck"><div class="ci cd">&#10003;</div><div>4 prompt files written</div></div>
-<div class="ck"><div class="ci cd">&#10003;</div><div>Onboarding message drafted</div></div>
-<div class="ck"><div class="ci cd">&#10003;</div><div>Design reviewed 3x by RH Agentic SDLC</div></div>
-<div class="ck"><div class="ci cd">&#10003;</div><div>Gap analysis against 12 weeks of real data</div></div>
-<div class="ck"><div class="ci ct">&nbsp;</div><div>Post onboarding in #chai-users</div></div>
-<div class="ck"><div class="ci ct">&nbsp;</div><div>Teach 8 Verified Knowledge lessons</div></div>
-<div class="ck"><div class="ci ct">&nbsp;</div><div>Create OTA-MONITOR-FEEDBACK ticket</div></div>
-</div>
 </div>
 
 </div>
+</div>
+
+<!-- TAB 2: PROMPT FILES -->
+<div class="tab" id="prompts">
+<div class="w" style="padding-top:72px">
+<h2 style="margin-bottom:6px">Prompt Files</h2>
+<p style="color:var(--t2);margin-bottom:24px">These 4 markdown files are delivered to the Chai Bot team. They define the persona's behavior. Click to expand.</p>
+
+<div class="pf">
+<div class="pf-h" onclick="toggle(this)"><h3>01_role.md <span class="badge bb">Persona Identity</span></h3><span class="arrow">&#9654;</span></div>
+<div class="pf-body">State machine, idempotency rules, button definitions, impact statement template, Spike creation details, stale-button check, error handling, bounds.
+
+Key rules:
+&#8226; UpgradeBlocker + Upgrades labels stay forever (additive)
+&#8226; Lifecycle labels are mutually exclusive (ADD first, REMOVE second)
+&#8226; 3-layer idempotency: linked issues &gt; bot comments &gt; labels
+&#8226; Always Spike URL for blocked-edge url field, never OCPBUGS
+&#8226; Re-read bug state on every button click (stale-button check)
+&#8226; Max 50 bugs/run, max 10 alerts, max 3 retries, max 1 PR per risk
+&#8226; Bot-created orphaned Spikes auto-close. Human-created: alert only.
+&#8226; Corrections via conversation (no button)</div>
+</div>
+
+<div class="pf">
+<div class="pf-h" onclick="toggle(this)"><h3>monitor-enriched.md <span class="badge bg">9am Task</span></h3><span class="arrow">&#9654;</span></div>
+<div class="pf-body">8-step pipeline. Runs every weekday at 9am ET. Always posts.
+
+Step 1: Two JQL queries (primary: active bugs, secondary: fixedIn candidates)
+Step 2: Filter by labels &#8212; only inspect bugs that MIGHT need action
+Step 3: get_jira_issue on candidates only (batches of 10, compact between)
+Step 4: 10 detection rules (STOP at first match, NEXT BUG):
+  Rule 1: fixedIn available &#8594; [Add FixedIn]
+  Rule 2: Active blocker &#8594; count only
+  Rule 3: Spike in Code Review &#8594; AUTO-TRANSITION (fall-through to Rule 4)
+  Rule 4: Impact ready &#8594; [Accept&#8212;Block Edge] / [Revise] / [Not a Blocker]
+  Rule 4b: Review reminder (24h)
+  Rule 5: Stale request (48h) &#8594; team tagged via OrgData
+  Rule 5b: Escalation (7d)
+  Rule 6: New UpgradeBlocker &#8594; duplicate check &#8594; [Create Spike]
+  Rule 6b: Already offered &#8594; skip
+  Orphaned: auto-close bot-created Spikes, alert for human-created
+Step 5: Pipeline check (best-effort Slack search for FAILEDs)
+Step 6: Batch &gt;3 new bugs &#8594; summary table
+Step 7: Daily status (always post)
+Step 8: Error reporting</div>
+</div>
+
+<div class="pf">
+<div class="pf-h" onclick="toggle(this)"><h3>monitor-brief.md <span class="badge by">3pm Task</span></h3><span class="arrow">&#9654;</span></div>
+<div class="pf-body">Same Steps 1-6 as enriched. Differences:
+
+&#8226; NO daily status section (if composing one, STOP)
+&#8226; Silent if nothing changed (heartbeat to thread only)
+&#8226; Posts top-level ONLY for: new bug, impact ready, fixedIn, stale, FAILED, orphan, or error</div>
+</div>
+
+<div class="pf">
+<div class="pf-h" onclick="toggle(this)"><h3>weekly-handover.md <span class="badge bp">Friday Task</span></h3><span class="arrow">&#9654;</span></div>
+<div class="pf-body">Two phases. Runs Friday 4pm ET. Always posts.
+
+PHASE 1 &#8212; Data gathering (compact every 3 sources):
+  Source 1: Active blockers by stage (JQL)
+  Source 2: Items waiting on teams
+  Source 3: Resolved this week (JQL)
+  Source 4: Open PRs (GitHub API)
+  Source 5: Merged PRs this week (GitHub API)
+  Source 6: Pipeline health (indexed Slack, including stale Recommend waiting &gt;14d)
+  Source 7: Bot activity metrics ([OTA-Monitor] comment counts)
+  Source 8: Feedback signals (OTA-MONITOR-FEEDBACK ticket)
+  Source 9: Latency metric (approximate: Spike offered timestamp &#8722; bug updated)
+
+PHASE 2 &#8212; Synthesis:
+  HTML artifact via send_html_to_thread
+  Sections: Immediate Attention, Blockers by Stage, Waiting on Teams,
+            Waiting on OTA, Resolved, PRs, Pipeline, Bot Performance,
+            Key Contacts, Notes for Incoming Monitor
+  Verification: output count == JQL count
+  Error: [DATA UNAVAILABLE] markers, never empty handover</div>
+</div>
+
+<p style="font-size:13px;color:var(--t3);margin-top:16px">Full files: <a href="https://github.com/shahsahil264/ota-monitor-design/tree/main/prompts" style="color:var(--blue)">github.com/shahsahil264/ota-monitor-design/prompts</a></p>
+</div>
+</div>
+
 <div style="padding:40px 0;text-align:center;border-top:1px solid var(--s2)">
 <p style="color:var(--t3);font-size:12px">OTA Monitor Agentic System &#8212; Validated by RH Agentic SDLC Working Group</p>
 </div>
+
+<script>
+function showTab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');event.target.classList.add('active');window.scrollTo({top:0,behavior:'smooth'})}
+function toggle(el){el.classList.toggle('open');el.nextElementSibling.classList.toggle('open')}
+</script>
 </body>
 </html>
