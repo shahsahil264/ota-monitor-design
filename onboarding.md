@@ -49,9 +49,13 @@ Testing channel:
 
 **Scheduled Tasks** (3 tasks, weekdays only, all post to #ota-monitor-bot)
 
-1. monitor-enriched — `0 13 * * 1-5` (9am ET). Always posts.
-2. monitor-brief — `0 19 * * 1-5` (3pm ET). Posts only if action needed.
-3. weekly-handover — `0 20 * * 5` (Fri 4pm ET). Always posts.
+All top-level posts should @mention `@ota-monitor` so the current rotation monitor gets notified.
+
+1. monitor-enriched — `0 10 * * 1-5` (10:00 UTC). Always posts.
+2. monitor-brief — `0 22 * * 1-5` (22:00 UTC). Posts only if action needed.
+3. weekly-handover — `0 22 * * 5` (Fri 22:00 UTC). Always posts.
+
+Times are 12h apart to cover EU + US timezones regardless of which monitor is on rotation.
 
 ---
 
@@ -79,3 +83,4 @@ Testing channel:
 ---
 
 I'll post the 4 instruction files in the thread after this message.
+"
