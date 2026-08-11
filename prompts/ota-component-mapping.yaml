@@ -1,52 +1,106 @@
-# OTA Component → Jira Project Mapping
+# OTA Component → Jira Project + Slack Mapping
 # Source: Historical Spike analysis from 50+ UpgradeBlocker impact statements (Aug 2026)
+# OrgData live queries for Slack channels (Aug 2026)
 # Review quarterly — run: type = Spike AND summary ~ "Impact statement request" AND labels = UpgradeBlocker
-# Fallback for unmapped components: OrgData lookup → filter out OCPBUGS/RFE → suggest → human confirms
+#
+# Routing priority:
+#   1. This config file (deterministic, data-driven)
+#   2. OrgData fuzzy lookup → filter out OCPBUGS/RFE → suggest (fallback)
+#   3. Ask OTA Monitor manually (last resort)
 
 component_to_project:
   # Networking (all → CORENET)
-  "Networking / openshift-sdn": "CORENET"
-  "Networking / ovn-kubernetes": "CORENET"
-  "Networking / whereabouts": "CORENET"
-  "Networking / ipsec": "CORENET"
-  "Multus": "CORENET"
+  "Networking / openshift-sdn":
+    project: "CORENET"
+    slack_channel: "#forum-ocp-sdn"
+  "Networking / ovn-kubernetes":
+    project: "CORENET"
+    slack_channel: "#forum-ocp-sdn"
+  "Networking / whereabouts":
+    project: "CORENET"
+    slack_channel: "#forum-ocp-sdn"
+  "Networking / ipsec":
+    project: "CORENET"
+    slack_channel: "#forum-ocp-sdn"
+  "Multus":
+    project: "CORENET"
+    slack_channel: "#forum-ocp-sdn"
 
   # Machine Config (all → MCO)
-  "Machine Config Operator": "MCO"
+  "Machine Config Operator":
+    project: "MCO"
+    slack_channel: "#forum-ocp-mco"
 
   # Cloud Compute (all → OCPCLOUD)
-  "Cloud Compute / Azure": "OCPCLOUD"
-  "Cloud Compute / AWS": "OCPCLOUD"
-  "Cloud Compute / Machine API Providers": "OCPCLOUD"
+  "Cloud Compute / Azure":
+    project: "OCPCLOUD"
+    slack_channel: "#forum-ocp-cloud"
+  "Cloud Compute / AWS":
+    project: "OCPCLOUD"
+    slack_channel: "#forum-ocp-cloud"
+  "Cloud Compute / Machine API Providers":
+    project: "OCPCLOUD"
+    slack_channel: "#forum-ocp-cloud"
 
   # CoreOS / kernel (→ COS)
-  "RHCOS": "COS"
+  "RHCOS":
+    project: "COS"
+    slack_channel: "#dev-coreos"
 
   # Individual team projects
-  "Monitoring": "MON"
-  "Console": "CONSOLE"
-  "OLM": "OPRUN"
-  "Authentication": "AUTH"
-  "Image Registry": "IR"
-  "Hosted Control Planes": "HOSTEDCP"
-  "etcd": "ETCD"
-  "SRIOV": "NHE"
+  "Monitoring":
+    project: "MON"
+    slack_channel: "#forum-openshift-monitoring"
+  "Console":
+    project: "CONSOLE"
+    slack_channel: "#forum-ocp-console"
+  "OLM":
+    project: "OPRUN"
+    slack_channel: "#forum-ocp-operator-fw"
+  "Authentication":
+    project: "AUTH"
+    slack_channel: null
+  "Image Registry":
+    project: "IR"
+    slack_channel: null
+  "Hosted Control Planes":
+    project: "HOSTEDCP"
+    slack_channel: null
+  "etcd":
+    project: "ETCD"
+    slack_channel: "#forum-ocp-etcd"
+  "SRIOV":
+    project: "NHE"
+    slack_channel: null
 
   # Catch-all → OCPNODE
-  "Logging": "OCPNODE"
-  "Node": "OCPNODE"
+  "Logging":
+    project: "OCPNODE"
+    slack_channel: null
+  "Node":
+    project: "OCPNODE"
+    slack_channel: "#forum-ocp-node"
 
 # Wildcard rules (apply when exact match fails)
 wildcard_rules:
-  "Networking / *": "CORENET"
-  "Cloud Compute / *": "OCPCLOUD"
+  "Networking / *":
+    project: "CORENET"
+    slack_channel: "#forum-ocp-sdn"
+  "Cloud Compute / *":
+    project: "OCPCLOUD"
+    slack_channel: "#forum-ocp-cloud"
 
 # Likely but unverified (no historical Spike data)
-# Uncomment after first use confirms:
-#  "Cluster Version Operator": "OTA"
-#  "Installer": "CORS"
-#  "Storage / *": "STOR"
-#  "kube-apiserver": "API"
+#  "Cluster Version Operator": { project: "OTA", slack_channel: "#forum-ocp-updates" }
+#  "Installer": { project: "CORS", slack_channel: "#forum-ocp-installer" }
+#  "Storage / *": { project: "STOR", slack_channel: "#forum-ocp-storage" }
+#  "kube-apiserver": { project: "API", slack_channel: "#forum-ocp-apiserver" }
 
 # Default when no match found
 default: "ASK_HUMAN"
+
+# Notes:
+# - OrgData does NOT provide Slack group handles (@team-alias) — only channel names
+# - OrgData escalation contacts are empty for most teams — don't rely on it
+# - For stale reminders: post to the team's slack_channel if available, otherwise #forum-ocp-updates
+# - For 7d escalation: post reminder to channel + notify OTA Monitor to escalate manually
