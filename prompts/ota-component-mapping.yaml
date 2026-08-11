@@ -1,0 +1,52 @@
+# OTA Component → Jira Project Mapping
+# Source: Historical Spike analysis from 50+ UpgradeBlocker impact statements (Aug 2026)
+# Review quarterly — run: type = Spike AND summary ~ "Impact statement request" AND labels = UpgradeBlocker
+# Fallback for unmapped components: OrgData lookup → filter out OCPBUGS/RFE → suggest → human confirms
+
+component_to_project:
+  # Networking (all → CORENET)
+  "Networking / openshift-sdn": "CORENET"
+  "Networking / ovn-kubernetes": "CORENET"
+  "Networking / whereabouts": "CORENET"
+  "Networking / ipsec": "CORENET"
+  "Multus": "CORENET"
+
+  # Machine Config (all → MCO)
+  "Machine Config Operator": "MCO"
+
+  # Cloud Compute (all → OCPCLOUD)
+  "Cloud Compute / Azure": "OCPCLOUD"
+  "Cloud Compute / AWS": "OCPCLOUD"
+  "Cloud Compute / Machine API Providers": "OCPCLOUD"
+
+  # CoreOS / kernel (→ COS)
+  "RHCOS": "COS"
+
+  # Individual team projects
+  "Monitoring": "MON"
+  "Console": "CONSOLE"
+  "OLM": "OPRUN"
+  "Authentication": "AUTH"
+  "Image Registry": "IR"
+  "Hosted Control Planes": "HOSTEDCP"
+  "etcd": "ETCD"
+  "SRIOV": "NHE"
+
+  # Catch-all → OCPNODE
+  "Logging": "OCPNODE"
+  "Node": "OCPNODE"
+
+# Wildcard rules (apply when exact match fails)
+wildcard_rules:
+  "Networking / *": "CORENET"
+  "Cloud Compute / *": "OCPCLOUD"
+
+# Likely but unverified (no historical Spike data)
+# Uncomment after first use confirms:
+#  "Cluster Version Operator": "OTA"
+#  "Installer": "CORS"
+#  "Storage / *": "STOR"
+#  "kube-apiserver": "API"
+
+# Default when no match found
+default: "ASK_HUMAN"

@@ -138,7 +138,18 @@ conditional update risk based on our current understanding.
 - Assignee: Same as the OCPBUGS bug's assignee
 - Label: UpgradeBlocker
 - Link: "is related to" (from Spike to OCPBUGS bug)
-- URL for blocked-edge `url` field: ALWAYS use the Spike URL, never the OCPBUGS URL. The Spike is the customer-facing artifact.
+- URL for blocked-edge `url` field: ALWAYS use the Spike URL, never the OCPBUGS URL.
+
+## Component → Project Routing
+
+Use the curated mapping in `ota-component-mapping.yaml` (built from 50+ historical Spikes) for deterministic routing:
+
+1. Read the bug's component field
+2. Look up in `ota-component-mapping.yaml` → if exact match, suggest that project
+3. If no exact match, try wildcard rules (e.g., "Networking / *" → CORENET)
+4. If no wildcard match, fall back to OrgData lookup → filter out OCPBUGS/RFE → suggest
+5. If OrgData returns nothing, ask: "Which project should receive the Spike for component {COMPONENT}?"
+6. ALWAYS present as a suggestion — human confirms before Spike is created The Spike is the customer-facing artifact.
 
 ## Verification Rules
 
