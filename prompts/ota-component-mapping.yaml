@@ -18,17 +18,26 @@
 # When to REMOVE an override: when the Cyborg data is fixed (MR merged, OrgData updated).
 
 overrides:
-  # Genuinely missing from Cyborg — MR to add pending
+  # TEMPORARY — remove each override as its Cyborg MR merges
+  #
+  # MR !1144: Cloud Compute / Azure → OCPCLOUD (pending sdodson review)
+  # MR !1153: Logging → LOG, Tracing → TRACING, Monitoring → MON (pending benl review)
+  #
+  # Once BOTH MRs merge, DELETE THIS ENTIRE SECTION.
+  # Cyborg becomes the sole source of truth — zero overrides needed.
+
   "Cloud Compute / Azure":
     project: "OCPCLOUD"
-    slack_channel: "#forum-ocp-cloud"
-    reason: "jira-OCPBUGS-cloud-compute-azure does not exist in Cyborg"
-
-  # Ambiguous — team has 2 types:main projects (MON and COO)
+    reason: "Pending MR !1144"
   "Monitoring":
     project: "MON"
-    slack_channel: "#forum-openshift-monitoring"
-    reason: "OrgData returns MON, COO, OBSDA. Both MON and COO are types:main. Historical Spikes use MON."
+    reason: "Pending MR !1153"
+  "Logging":
+    project: "LOG"
+    reason: "Pending MR !1153"
+  "Distributed Tracing":
+    project: "TRACING"
+    reason: "Pending MR !1153"
 
 # PREVIOUSLY OVERRIDDEN — NOW RESOLVED (Cyborg gets these right):
 # "Machine Config Operator" — MCO IS its own team. Earlier test had query phrasing issue.
