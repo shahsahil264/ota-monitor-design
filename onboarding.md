@@ -10,7 +10,10 @@ Post this message in #chai-users. Attach the 4 prompt files from `prompts/` in t
 **Display name:** OTA Monitor
 **Description:** Cincinnati pipeline health and UpgradeBlocker lifecycle automation
 
-I will deliver 4 instruction files in the thread: 01_role.md, monitor-enriched.md, monitor-brief.md, weekly-handover.md.
+Design doc: https://shahsahil264.github.io/ota-monitor-design/
+Repo: https://github.com/shahsahil264/ota-monitor-design
+
+I'll post the 4 instruction files (01_role.md, monitor-enriched.md, monitor-brief.md, weekly-handover.md) in the thread.
 
 ---
 
@@ -22,9 +25,6 @@ Bot output channel:
 Knowledge-source channels (indexed, bot does NOT post here):
 - #osus-graph-data-automation — Cincinnati pipeline messages
 - #forum-ocp-updates — OTA team discussions
-
-Testing channel:
-- #test-ota-monitor-bot — https://redhat.enterprise.slack.com/archives/C0BNVHYMEH5
 
 ---
 
@@ -40,22 +40,33 @@ Testing channel:
 
 **Tools**
 
-- Jira — expanded scope: label updates on existing OCPBUGS issues (only_self_created override needed)
+- Jira — expanded scope: label updates on existing OCPBUGS issues (only_self_created override needed). If override isn't possible, fallback: bot suggests label change, human applies manually.
 - GitHub: fork-based PR workflow for openshift/cincinnati-graph-data
-- Remote Workspace: custom env ota_dev (Go + Python 3), coordinator Jira callbacks
-- Cyborg/orgdata: component → team → project mapping
+- Remote Workspace: custom env ota_dev (Go + Python 3), coordinator Jira callbacks preferred
+- Cyborg/orgdata: component → team → project routing (primary source for Spike targeting)
+
+Jira create access verified: ship-help-jira@redhat.com has Spike + create permissions in MON, CORENET, MCO, WINC, SPLAT, OCPEDGE.
+
+---
+
+**Jira Operations**
+
+- Read: OCPBUGS, OTA, MON, CORENET, MCO, WINC, SPLAT, OCPEDGE
+- Create: Spike issues in component team projects — approval-gated
+- Update labels: On existing OCPBUGS bugs (full-set replace) — approval-gated
+- Comment: [OTA-Monitor] prefixed audit trail — direct, no gate
+- Link: \"is related to\" between Spike and OCPBUGS bug — direct
+- Transition: Status changes on bot-created Spikes — direct
 
 ---
 
 **Scheduled Tasks** (3 tasks, weekdays only, all post to #ota-monitor-bot)
 
-All top-level posts should @mention `@ota-monitor` so the current rotation monitor gets notified.
+All top-level posts @mention @ota-monitor so the current rotation monitor gets notified. Times are 12h apart to cover EU + US timezones.
 
 1. monitor-enriched — `0 10 * * 1-5` (10:00 UTC). Always posts.
 2. monitor-brief — `0 22 * * 1-5` (22:00 UTC). Posts only if action needed.
 3. weekly-handover — `0 22 * * 5` (Fri 22:00 UTC). Always posts.
-
-Times are 12h apart to cover EU + US timezones regardless of which monitor is on rotation.
 
 ---
 
@@ -70,15 +81,10 @@ Times are 12h apart to cover EU + US timezones regardless of which monitor is on
 **Questions for the team:**
 
 1. Are #osus-graph-data-automation and #forum-ocp-updates already indexed?
-2. Does ship-help-jira@redhat.com have create permissions in MON, CORENET, MCO, WINC, SPLAT, OCPEDGE? Does Spike issue type exist in all?
-3. Can only_self_created guard on priv_jira_update_issue be overridden?
-4. Is GitHub PR activity notification available for bot-opened PRs?
-5. Button TTL? Callback serialization per thread?
-6. Context/timeout limits for 10-15 get_jira_issue calls after pre-filtering?
-7. Can you share a redacted scheduled task prompt example?
-8. Is mid-turn compact() recommended for batch Jira processing?
-9. Scope precedent — any comparable personas?
-10. Can the RIT manual Google Doc be shared with chai-bot@redhat.com?
+2. Can only_self_created guard on priv_jira_update_issue be overridden for this persona? Use case: approval-gated label updates on existing OCPBUGS bugs for the UpgradeBlocker lifecycle.
+3. Is there a TTL on action buttons?
+4. Are button callback turns strictly serialized per thread?
+5. Can GitHub PR activity notifications be enabled for bot-opened PRs in openshift/cincinnati-graph-data?
 
 ---
 
