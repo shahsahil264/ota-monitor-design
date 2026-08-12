@@ -26,7 +26,7 @@ The OTA Monitor watches the Cincinnati update pipeline and drives UpgradeBlocker
 │  │                    TOOLS                                │     │
 │  │  Jira (read/write/create)  │  GitHub (fork-based PRs)  │     │
 │  │  Cyborg/OrgData (primary)  │  Workspace (/propose-risk) │     │
-│  │  Slack (indexed search)    │  web_fetch                │     │
+│  │  Slack (indexed search)    │  web_fetch (general_dev)  │     │
 │  └────────────────────────────────────────────────────────┘     │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -36,12 +36,20 @@ The OTA Monitor watches the Cincinnati update pipeline and drives UpgradeBlocker
 **Cyborg is the primary source** — official, team-maintained, pivots when teams update preferences.
 
 ```
-1. Override config (2 entries only)          ← Cloud Compute/Azure, Monitoring
-2. Cyborg jira-OCPBUGS-* lookup + filter    ← primary, 9/11 clean
-3. Parent component fallback                ← safe, same team
-4. Ask OTA Monitor manually                 ← last resort
-5. Human confirms EVERY time               ← always
+1. Override config (4 entries — ALL temporary, pending Cyborg MRs)
+2. Cyborg jira-OCPBUGS-* lookup + filter meta-projects
+3. Parent component fallback
+4. Ask OTA Monitor manually
+5. Human confirms EVERY time
 ```
+
+Overrides pending elimination:
+- **Cloud Compute / Azure** → OCPCLOUD — [MR !1144](https://gitlab.cee.redhat.com/hybrid-platforms/org/-/merge_requests/1144) pending
+- **Monitoring** → MON — [MR !1153](https://gitlab.cee.redhat.com/hybrid-platforms/org/-/merge_requests/1153) pending
+- **Logging** → LOG — MR !1153 pending
+- **Distributed Tracing** → TRACING — MR !1153 pending
+
+Once both MRs merge → **zero overrides**. Fully Cyborg-driven.
 
 ## State Machine
 
@@ -69,7 +77,7 @@ Everything else is automatic.
 | **22:00 UTC** (weekdays) | Same checks | Only if action needed |
 | **Fri 22:00 UTC** | Weekly handover (HTML from 9 sources) | Always |
 
-12h apart to cover EU + US timezones. ~8 LLM calls/week. All posts tag `@ota-monitor`.
+12h apart to cover EU + US timezones. ~8 LLM calls/week. All posts tag `@ota-monitor`. Standard `general_dev` workspace (Go + Python 3 included).
 
 ## Where AI Earns Its Keep
 
@@ -83,7 +91,7 @@ Everything else is automatic.
 
 ## Rollout
 
-**Live from day 1.** All features available. Human controls pace by which buttons they click.
+**Live from day 1.** Deploy direct to #ota-monitor-bot. All features available. Human controls pace.
 
 | Day | What |
 |-----|------|
@@ -99,18 +107,22 @@ Everything else is automatic.
 - **#osus-graph-data-automation** — bot reads (indexed), never posts
 - **#forum-ocp-updates** — indexed for context, bot never posts
 
+## Feedback
+
+Bot logs [Skip] clicks, manual overrides, and missed detections to [OTA-2104](https://redhat.atlassian.net/browse/OTA-2104). Weekly handover includes bot performance metrics from this ticket.
+
 ## Repository Contents
 
 ```
 ├── index.html                         # Design doc (GitHub Pages)
-├── onboarding.md                      # Ready-to-post #chai-users message
+├── onboarding.md                      # #chai-users onboarding message
 ├── plan.md                            # Implementation plan summary
 └── prompts/
     ├── 01_role.md                     # Persona identity + rules
     ├── monitor-enriched.md            # 10:00 UTC task (10 detection rules)
     ├── monitor-brief.md               # 22:00 UTC task (silent if nothing)
-    ├── weekly-handover.md             # Friday handover (9 data sources)
-    └── ota-component-mapping.yaml     # 2-entry override (Cyborg is primary)
+    ├── weekly-handover.md             # Friday handover (9 sources, reads OTA-2104)
+    └── ota-component-mapping.yaml     # 4 temp overrides (zero after MRs merge)
 ```
 
 ## Status
@@ -118,13 +130,15 @@ Everything else is automatic.
 - [x] Design reviewed 4x by RH Agentic SDLC persona
 - [x] Gap analysis against 12 weeks of real RIT status docs
 - [x] Trevor King (OTA SME) reviewed and approved
-- [x] Cyborg/OrgData verified via 3 personas — overrides minimized to 2
-- [x] Azure Cyborg MR submitted (eliminates 1 override)
-- [x] 4 prompt files + override config written and reviewed
+- [x] Cyborg routing verified — 4 MRs submitted to eliminate all overrides
+- [x] 5 prompt files written, reviewed, posted to #chai-users
+- [x] Onboarding posted in #chai-users
 - [x] #ota-monitor-bot channel created
-- [x] Jira create permissions verified (all 6 target projects)
-- [ ] Post onboarding in #chai-users
+- [x] Jira permissions verified (all 6 target projects)
+- [x] Feedback ticket created ([OTA-2104](https://redhat.atlassian.net/browse/OTA-2104))
+- [x] Workspace confirmed: standard general_dev (no custom env needed)
+- [ ] Cyborg MRs merge (!1144 + !1153) → zero overrides
+- [ ] Chai Bot team deploys persona
 - [ ] Teach 8 Verified Knowledge lessons
-- [ ] Create OTA-MONITOR-FEEDBACK Jira ticket
-- [ ] Deploy and go live
+- [ ] Go live
 "
