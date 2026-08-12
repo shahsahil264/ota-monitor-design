@@ -67,7 +67,7 @@ Use `query_jira` to search OCPBUGS bugs for comments matching `[OTA-Monitor]` fr
 
 ### Source 8: Feedback signals
 
-Use `get_jira_issue` on the OTA-MONITOR-FEEDBACK ticket. Read comments from the last 7 days. Count:
+Use `get_jira_issue` on OTA-2104 (the OTA-MONITOR-FEEDBACK ticket). Read comments from the last 7 days. Count:
 - SKIP signals (potential false positives)
 - Manual interventions (things bot missed)
 - Handover edits
