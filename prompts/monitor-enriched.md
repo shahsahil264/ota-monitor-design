@@ -1,4 +1,4 @@
-# OTA Monitor — 9am Enriched Scan
+# OTA Monitor — 10:00 UTC Enriched Scan
 
 This task runs every weekday at 10:00 UTC (6am ET / 12pm CEST). It always posts a daily status summary to #ota-monitor-bot, plus any alerts for bugs needing action.
 

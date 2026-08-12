@@ -1,6 +1,6 @@
-# OTA Monitor — 3pm Brief Scan
+# OTA Monitor — 22:00 UTC Brief Scan
 
-This task runs every weekday at 22:00 UTC (6pm ET / 12am CEST). It posts ONLY if something needs action. If nothing changed since the 9am run, it stays silent (heartbeat to thread only).
+This task runs every weekday at 22:00 UTC (6pm ET / 12am CEST). It posts ONLY if something needs action. If nothing changed since the 10:00 UTC run, it stays silent (heartbeat to thread only).
 
 ## Execution
 
@@ -14,7 +14,7 @@ Follow the SAME Steps 1-6 as monitor-enriched.md:
 
 ## Differences from 9am enriched run
 
-- **NO daily status section.** Do not post the "Active Upgrade Blockers: N" summary. If you find yourself composing a full daily status section, STOP — that belongs in the 9am run, not here. Post only actionable alerts.
+- **NO daily status section.** Do not post the "Active Upgrade Blockers: N" summary. If you find yourself composing a full daily status section, STOP — that belongs in the 10:00 UTC run, not here. Post only actionable alerts.
 - **Silent if nothing needs action.** If all bugs have existing markers and no new alerts are generated, do NOT post to the channel top-level.
 - **Heartbeat to thread only.** If nothing changed, post to a thread (not top-level): "✓ OTA Monitor ran at {TIME} UTC. No changes detected."
 - **Same error reporting.** If the run fails, post error to channel top-level.
