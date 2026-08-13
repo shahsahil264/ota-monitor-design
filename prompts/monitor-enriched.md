@@ -128,6 +128,8 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 
 Search indexed Slack history from #osus-graph-data-automation for recent messages containing "FAILED".
 
+**Track search results**: Record the number of messages searched. This is needed for the daily status to distinguish "confirmed healthy" from "channel not indexed."
+
 For each FAILED message found:
 - If message contains "branch.*already exists" → classify as "stale branch." Alert: "Pipeline: stale branch blocking promotion. Delete branch from bot fork."
 - If message contains "extend the risk" or "declare a fix version" → classify as "risk extension needed." Alert: "Pipeline: risk extension needed. {RISK_NAME} needs extending to {VERSION}. [Extend Risk] [Skip]"
@@ -135,8 +137,12 @@ For each FAILED message found:
 - If message indicates merge conflict or CI failure → classify as "PR failure." Alert: "Pipeline: promotion PR failed. Recreate PR."
 - If message contains "Recommend waiting" → ignore (informational)
 
-If Slack search fails, times out, or returns no results:
-- Note "Pipeline data unavailable" in the daily status
+If Slack search returns results (even zero FAILEDs), report as confirmed:
+- "🔄 Pipeline: Healthy (searched {N} messages, 0 FAILEDs in last 2 days)"
+
+If Slack search fails, times out, or the channel is not indexed:
+- Report honestly: "🔄 Pipeline: ⚠️ data unavailable (channel not indexed or search failed)"
+- Do NOT report "No FAILED messages detected" when search returned nothing — that is ambiguous.
 - Continue to Step 6. Do NOT abort the run.
 - The Jira lifecycle monitoring (Steps 1-4) is the reliable core. Pipeline check is best-effort and supplementary. A Slack indexing outage must never take down the Jira monitoring.
 
@@ -156,26 +162,129 @@ New UpgradeBlocker bugs detected: {COUNT}
 [Create All Spikes] [Review Individually] [Skip All]
 ```
 
+## Step 6b: Gather PR data (filtered)
+
+Search GitHub for open PRs in openshift/cincinnati-graph-data. **Filter to OTA-relevant PRs only:**
+
+**Include:**
+- PRs touching `blocked-edges/` or `channels/` directories
+- PRs authored by `openshift-ota-bot` (promotion PRs)
+- PRs with OTA-relevant titles containing: `blocked-edges`, `promote`, `risk`, `minor_min`, `product-life-cycle`
+
+**Exclude:**
+- PRs by `dependabot` (dependency bumps)
+- PRs that don't match any of the above criteria
+
+**Split into two categories:**
+- **Bug-linked PRs**: PRs whose title references a specific OCPBUGS bug (e.g., "blocked-edges: OCPBUGS-100182"). These go inline with their bug in the status, NOT in the PR section.
+- **Other OTA PRs**: Everything else that passed the filter (minor_min raises, product-life-cycle, promotions). These go in a separate "Other OTA PRs" section.
+
 ## Step 7: Post daily status (always, even if no alerts)
 
 Post a daily status summary to #ota-monitor-bot. **Tag @ota-monitor in every top-level post** so the current rotation monitor gets notified.
 
+### Format rules
+
+- **Group bugs by lifecycle stage**, ordered by urgency (most actionable first)
+- **Omit empty stages** — do NOT show stages with 0 bugs
+- **Collapse when uniform** — if all bugs are in the same stage, use a single line: "Active Upgrade Blockers: {N} (all {STAGE})" instead of a 4-line breakdown with three "0" lines
+- **Bug-linked PRs inline** — each UpdateRecommendationsBlocked bug shows its associated blocked-edge PR and merge status on the same line (clickable link)
+- **Spike status inline** — each ImpactStatementRequested/Proposed bug shows its linked Spike and Spike status
+- **Separate PR section** — only for OTA-relevant PRs NOT tied to a specific bug
+- **All links clickable** — bug keys link to Jira, PR numbers link to GitHub
+- **Use emoji prefixes** for visual scanning and dividers between sections
+- **Cross-reference alerts** — if an alert was posted above, reference it with ➡️
+
+### Template: quiet day (all bugs in same stage)
+
 ```
-@ota-monitor — Daily Status — {DATE}
+@ota-monitor — Daily Status — {DATE} {TIME} UTC
 
-Active Upgrade Blockers: {COUNT}
-  UpdateRecommendationsBlocked: {N}
-  ImpactStatementProposed (awaiting review): {N}
-  ImpactStatementRequested (waiting on teams): {N}
-  UpgradeBlocker (new/untriaged): {N}
+✅ No new alerts. No action needed.
 
-Open PRs in openshift/cincinnati-graph-data: {COUNT}
-Pipeline: {healthy / N FAILEDs detected}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-{Any alerts posted above}
+📊 Active Upgrade Blockers: {N} (all UpdateRecommendationsBlocked)
+
+✅ Blocked, waiting for fix:
+• {BUG_KEY} — {SUMMARY}
+  {COMPONENT} · {PRIORITY} · {STATUS} — PR #{XXXX} ✅ merged
+• {BUG_KEY} — {SUMMARY}
+  {COMPONENT} · {PRIORITY} · {STATUS} — PR #{XXXX} 🔄 open
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 Other OTA PRs: {N}
+• #{XXXX} — {TITLE} {STATUS_EMOJI} {STATUS}
+
+🔄 Pipeline: Healthy (searched {N} messages, 0 FAILEDs in last 2 days)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Next scan: {NEXT_DATE} {NEXT_TIME} UTC
 ```
 
-If there are no alerts and nothing changed, post the status summary to a thread (not top-level) to reduce noise:
+### Template: busy day (bugs across multiple stages)
+
+```
+@ota-monitor — Daily Status — {DATE} {TIME} UTC
+
+🔴 {N} items need attention — see alerts above
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 Active Upgrade Blockers: {TOTAL}
+
+🔴 New/Untriaged ({N}):
+• {BUG_KEY} — {SUMMARY}
+  {COMPONENT} · {PRIORITY} · {STATUS}
+  ➡️ [Create Spike] alert posted above
+
+⏳ Waiting on Teams ({N}):
+• {BUG_KEY} — {SUMMARY}
+  {COMPONENT} · {PRIORITY} · {STATUS} — Spike: {SPIKE_KEY} ({SPIKE_STATUS}, {N} days)
+
+📋 Awaiting OTA Review ({N}):
+• {BUG_KEY} — {SUMMARY}
+  {COMPONENT} · {PRIORITY} · {STATUS} — Spike: {SPIKE_KEY} ({SPIKE_STATUS})
+  ➡️ [Accept — Block Edge] alert posted above
+
+✅ Blocked, waiting for fix ({N}):
+• {BUG_KEY} — {SUMMARY}
+  {COMPONENT} · {PRIORITY} — PR #{XXXX} ✅ merged
+• {BUG_KEY} — {SUMMARY}
+  {COMPONENT} · {PRIORITY} — PR #{XXXX} 🔄 open
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 Other OTA PRs: {N}
+• #{XXXX} — {TITLE} {STATUS_EMOJI} {STATUS}
+
+🔄 Pipeline: {PIPELINE_STATUS}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Next scan: {NEXT_DATE} {NEXT_TIME} UTC
+```
+
+### Stage emoji mapping
+
+| Stage | Emoji | Label |
+|-------|-------|-------|
+| New/Untriaged | 🔴 | UpgradeBlocker only (no lifecycle label) |
+| Waiting on Teams | ⏳ | ImpactStatementRequested |
+| Awaiting OTA Review | 📋 | ImpactStatementProposed |
+| Blocked, waiting for fix | ✅ | UpdateRecommendationsBlocked |
+
+### Pipeline status format
+
+| Condition | Output |
+|-----------|--------|
+| Search returned results, 0 FAILEDs | 🔄 Pipeline: Healthy (searched {N} messages, 0 FAILEDs in last 2 days) |
+| Search returned results, N FAILEDs | 🔄 Pipeline: ⚠️ {N} FAILED(s) detected — see alerts above |
+| Search failed or channel not indexed | 🔄 Pipeline: ⚠️ data unavailable (channel not indexed or search failed) |
+
+### Thread heartbeat (no alerts, nothing changed)
+
+If there are no alerts and nothing changed, post to a thread (not top-level):
 "✓ OTA Monitor ran at {TIME} UTC. Active blockers: {N}, no changes. Next run: {NEXT_TIME} UTC."
 
 ## Step 8: Error reporting

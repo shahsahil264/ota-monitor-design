@@ -43,9 +43,13 @@ project = OCPBUGS AND labels in (UpgradeBlocker) AND status = Closed AND resolve
 
 Record: key, summary, resolution, fix version.
 
-### Source 4: Open PRs in openshift/cincinnati-graph-data
+### Source 4: Open PRs in openshift/cincinnati-graph-data (filtered)
 
-Search GitHub for open PRs. Record: PR number, title, age (days since opened), CI status, review status (approved/changes requested/pending).
+Search GitHub for open PRs. **Filter to OTA-relevant PRs only:**
+- INCLUDE: PRs touching `blocked-edges/` or `channels/`, PRs by `openshift-ota-bot`, PRs with titles containing `blocked-edges`, `promote`, `risk`, `minor_min`, `product-life-cycle`
+- EXCLUDE: PRs by `dependabot`, PRs not matching any include criteria
+
+Record: PR number, title, age (days since opened), CI status, review status (approved/changes requested/pending). Note which PRs are linked to specific UpgradeBlocker bugs (these appear inline in the blocker table, not repeated in the PR section).
 
 ### Source 5: Merged PRs this week
 
@@ -121,8 +125,9 @@ Table with: Bug, Summary, Spike Link, Days Waiting
 **Resolved This Week**
 Table with: Bug, Summary, Resolution, Fix Version
 
-**Graph-Data PRs**
-Open: Table with PR, Title, Age, CI, Review
+**Graph-Data PRs (OTA-relevant only)**
+Bug-linked PRs appear inline with their bug in the Active Blockers table — do NOT repeat them here.
+Open: Table with PR, Title, Age, CI, Review (only PRs not tied to a specific bug)
 Merged: Table with PR, Title, Merged Date
 
 **Pipeline Health**
