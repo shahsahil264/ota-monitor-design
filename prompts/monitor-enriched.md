@@ -13,8 +13,10 @@ project = OCPBUGS AND labels in (UpgradeBlocker, ImpactStatementRequested, Impac
 
 **Secondary JQL** (fixedIn candidates — primary excludes Closed bugs):
 ```
-project = OCPBUGS AND labels = UpdateRecommendationsBlocked AND status in (Closed, Verified) AND resolution = Done ORDER BY updated DESC
+project = OCPBUGS AND labels = UpdateRecommendationsBlocked AND status in (Closed, Verified) AND resolution = Done AND updated >= "2026-08-13" ORDER BY updated DESC
 ```
+
+The `updated >= "2026-08-13"` filter excludes bugs closed before the bot started monitoring. Without this, every pre-existing Closed+UpdateRecommendationsBlocked bug appears as a fixedIn candidate every scan (they lack `[OTA-Monitor] fixedIn` comments because the bot didn't exist yet). Bugs closed before Aug 13 2026 were handled manually — the bot should not re-alert on them.
 
 `query_jira` returns metadata only (key, summary, status, priority, labels) — no comments, no description. This is cheap.
 
@@ -181,7 +183,7 @@ Search GitHub for open PRs in openshift/cincinnati-graph-data. **Filter to OTA-r
 
 ## Step 7: Post daily status (always, even if no alerts)
 
-Post a daily status summary to #ota-monitor-bot. **Tag @ota-monitor in every top-level post** so the current rotation monitor gets notified.
+Post a daily status summary to #ota-monitor-bot. **Tag the OTA Monitor rotation in every top-level post** using `<!subteam^STE7S7ZU2|@ota-monitor>` so the current rotation monitor gets notified.
 
 ### Format rules
 
@@ -198,7 +200,7 @@ Post a daily status summary to #ota-monitor-bot. **Tag @ota-monitor in every top
 ### Template: quiet day (all bugs in same stage)
 
 ```
-@ota-monitor — Daily Status — {DATE} {TIME} UTC
+<!subteam^STE7S7ZU2|@ota-monitor> — Daily Status — {DATE} {TIME} UTC
 
 ✅ No new alerts. No action needed.
 
@@ -226,7 +228,7 @@ Next scan: {NEXT_DATE} {NEXT_TIME} UTC
 ### Template: busy day (bugs across multiple stages)
 
 ```
-@ota-monitor — Daily Status — {DATE} {TIME} UTC
+<!subteam^STE7S7ZU2|@ota-monitor> — Daily Status — {DATE} {TIME} UTC
 
 🔴 {N} items need attention — see alerts above
 
@@ -287,7 +289,31 @@ Next scan: {NEXT_DATE} {NEXT_TIME} UTC
 If there are no alerts and nothing changed, post to a thread (not top-level):
 "✓ OTA Monitor ran at {TIME} UTC. Active blockers: {N}, no changes. Next run: {NEXT_TIME} UTC."
 
-## Step 8: Error reporting
+## Step 8: Record run metrics
+
+After posting the daily status, record what this run did by commenting on OTA-2104 (the OTA-MONITOR-FEEDBACK ticket). This is how the weekly handover collects bot performance data — JQL cannot search comment body text, so each run self-reports.
+
+Call `comment_on_jira_issue` with:
+- `issue_key`: "OTA-2104"
+- `comment_text`: single-line run summary (format below)
+
+**Format** (single line, machine-parseable):
+```
+[OTA-Monitor][Run] {DATE} {TIME} UTC | alerts:{N} spikes:{N} transitions:{N} reviews:{N} skips:{N} fixedIn:{N} bugs_processed:{N}
+```
+
+Count each action taken during THIS run:
+- `alerts`: total alerts posted (new UpgradeBlocker, fix detected, pipeline FAILED, etc.)
+- `spikes`: spike creation buttons posted (Rule 6)
+- `transitions`: auto-transitions executed (Rule 3)
+- `reviews`: review buttons posted (Rule 4)
+- `skips`: bugs skipped by any rule (already handled, no action needed)
+- `fixedIn`: fixedIn alerts posted (Rule 1)
+- `bugs_processed`: total bugs inspected via `get_jira_issue`
+
+**Error isolation**: If `comment_on_jira_issue` fails, log the error but do NOT abort the run. Run metrics are nice-to-have, not mission-critical. The daily status and alerts are the critical outputs.
+
+## Step 9: Error reporting
 
 If the entire run fails (JQL timeout, API error), post an error to the channel (top-level, not thread):
 "⚠️ OTA Monitor failed at {TIME} UTC. Error: {ERROR_DETAILS}. Next run: {NEXT_TIME} UTC."
