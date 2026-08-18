@@ -93,20 +93,25 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 
 **Rule 5 — stale impact statement request:**
 - Labels contain `ImpactStatementRequested`
-- Comment `[OTA-Monitor] Spike offered` exists AND is older than 48 hours
+- Determine reference timestamp for staleness:
+  - If comment `[OTA-Monitor] Spike offered` exists → use that comment's timestamp
+  - Else if a linked Spike issue exists → use the Spike's creation date (Spike was created manually outside bot workflow)
+  - Else → skip this rule (no way to determine when the request started)
+- Reference timestamp is older than 48 hours
 - Look up the assignee's team using orgdata (component → team)
 - Post reminder: "STALE: {BUG_KEY} — impact statement requested {N} days ago. Team: {TEAM}. Assignee: {ASSIGNEE}."
 - → NEXT BUG
 
 **Rule 5b — escalation warning (7+ days):**
-- Same as Rule 5 but `Spike offered` comment is older than 7 days
+- Same as Rule 5 but reference timestamp is older than 7 days
 - Post escalation warning: "ESCALATION: {BUG_KEY} — no impact statement response in {N} days. Per the enhancement: 'In the absence of a response within 7 days, we may declare a conditional update risk based on our current understanding.'"
 - → NEXT BUG
 
 **Rule 6 — new UpgradeBlocker:**
 - Labels contain `UpgradeBlocker` but NOT `ImpactStatementRequested`, NOT `ImpactStatementProposed`, NOT `UpdateRecommendationsBlocked`
 - No comment matching `[OTA-Monitor] Spike offered`
-- No linked Spike issue
+- No linked Spike issue (check for ANY linked Spike — open OR closed. A closed Spike means this bug was already triaged, possibly via [Not a Blocker]. Do NOT re-alert.)
+- No comment matching `[OTA-Monitor][Feedback]` (if a Feedback comment exists, this bug was already triaged — either skipped or determined not a blocker. Do NOT re-alert.)
 - **Duplicate check** (part of the condition, not after): Search for existing open Spike issues linked to bugs with the same component.
   - If duplicate found: post "Possible duplicate: {EXISTING_SPIKE_KEY} already exists for component {COMPONENT}. [Create Spike — possible duplicate] [Skip — Duplicate]"
   - If no duplicate: look up component → team → project using orgdata. Post alert: "New UpgradeBlocker: {BUG_KEY} — {SUMMARY}. Component: {COMPONENT}. Suggested project: {PROJECT}. [Create Impact Statement in {PROJECT}] [Skip] [Escalate]"
@@ -122,9 +127,11 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 **Orphaned spike check (all bugs):**
 - Bug status is Closed
 - A linked Spike issue exists and is NOT Closed
-- Check: does the OCPBUGS bug have a `[OTA-Monitor] Impact statement spike created` comment? (= bot-created Spike)
-  - If bot-created: AUTO-CLOSE the Spike directly (no button). Resolution: "Done" if bug resolved as Done, "Won't Do" if Won't Fix/Not a Bug. Comment on Spike: `[OTA-Monitor] Auto-closed: linked {BUG_KEY} is {STATUS}`. Post to Slack: "Spike {SPIKE_KEY} auto-closed."
-  - If human-created: post alert only: "Orphaned Spike: {SPIKE_KEY} still open but {BUG_KEY} is Closed. Please review and close manually."
+- **Clone check**: Before auto-closing, check if the Spike is also linked to any OTHER open OCPBUGS bugs (clones or related bugs). If yes → do NOT auto-close. Alert instead: "Spike {SPIKE_KEY} linked to closed {BUG_KEY} but also linked to open {OTHER_BUG_KEY}. Review before closing."
+- If no other open bugs are linked to the Spike:
+  - Check: does the OCPBUGS bug have a `[OTA-Monitor] Impact statement spike created` comment? (= bot-created Spike)
+    - If bot-created: AUTO-CLOSE the Spike directly (no button). Resolution: "Done" if bug resolved as Done, "Won't Do" if Won't Fix/Not a Bug. Comment on Spike: `[OTA-Monitor] Auto-closed: linked {BUG_KEY} is {STATUS}`. Post to Slack: "Spike {SPIKE_KEY} auto-closed."
+    - If human-created: post alert only: "Orphaned Spike: {SPIKE_KEY} still open but {BUG_KEY} is Closed. Please review and close manually."
 - → NEXT BUG
 
 ## Step 5: Pipeline check (best-effort)
@@ -133,7 +140,10 @@ Search indexed Slack history from #osus-graph-data-automation for recent message
 
 **Track search results**: Record the number of messages searched. This is needed for the daily status to distinguish "confirmed healthy" from "channel not indexed."
 
+**Before alerting on any FAILED message**, check if the associated PR (if mentioned) is already merged. Most FAILEDs are phantom failures from already-merged PRs — the pipeline retried after the PR landed. If the PR is merged, skip the alert entirely.
+
 For each FAILED message found:
+- **First**: extract the PR number from the message. Check if that PR is merged in openshift/cincinnati-graph-data. If merged → skip (phantom failure, already resolved).
 - If message contains "branch.*already exists" → classify as "stale branch." Alert: "Pipeline: stale branch blocking promotion. Delete branch from bot fork."
 - If message contains "extend the risk" or "declare a fix version" → classify as "risk extension needed." Alert: "Pipeline: risk extension needed. {RISK_NAME} needs extending to {VERSION}. [Extend Risk] [Skip]"
   When human clicks [Extend Risk]: trigger Skill 3 with action_type="extend". Workspace invokes /propose-risk (same composition pattern as create — do NOT use graph-extend-or-fix Go tool).
@@ -214,6 +224,8 @@ Post a daily status summary to #ota-monitor-bot. **Tag the OTA Monitor rotation 
   {COMPONENT} · {PRIORITY} · {STATUS} — PR #{XXXX} ✅ merged
 • {BUG_KEY} — {SUMMARY}
   {COMPONENT} · {PRIORITY} · {STATUS} — PR #{XXXX} 🔄 open
+• {BUG_KEY} — {SUMMARY}
+  {COMPONENT} · {PRIORITY} · {STATUS} — ⚠️ No blocked-edge PR found
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -256,6 +268,8 @@ Next scan: {NEXT_DATE} {NEXT_TIME} UTC
   {COMPONENT} · {PRIORITY} — PR #{XXXX} ✅ merged
 • {BUG_KEY} — {SUMMARY}
   {COMPONENT} · {PRIORITY} — PR #{XXXX} 🔄 open
+• {BUG_KEY} — {SUMMARY}
+  {COMPONENT} · {PRIORITY} — ⚠️ No blocked-edge PR found
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

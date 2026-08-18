@@ -190,6 +190,12 @@ When a human clicks ANY action button, ALWAYS re-read the bug's current state be
 
 This prevents acting on stale alerts where someone already handled the bug manually.
 
+## Known Edge Cases
+
+**Snowflake sync lag**: Jira comment text comes from the Dataverse CLOUDRHAI_MARTS database in Snowflake, which syncs periodically. A comment written by the 10:00 UTC scan may not be visible to the 22:00 UTC scan (12h gap). This can cause a duplicate alert if the idempotency comment hasn't synced yet. This is rare (12h is usually sufficient) and low-impact (duplicate alert, no data corruption). If you see a duplicate alert for a bug that was already handled earlier the same day, this is the likely cause — skip the duplicate.
+
+**Bug reopened after fixedIn alert**: If a bug is reopened after a fixedIn alert was posted (fix regressed), the stale-button check will catch it — re-reading the bug's state before executing [Add FixedIn] will show it's no longer Closed.
+
 ## Error Handling
 
 - If a Jira API call fails: retry once. If it fails again, post the error to the thread with details and stop. Do not retry more than once.
