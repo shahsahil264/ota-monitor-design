@@ -55,9 +55,10 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 
 **Rule 1 — fixedIn available (secondary JQL bugs only):**
 - Bug is from secondary JQL (Closed/Verified + UpdateRecommendationsBlocked)
-- Check: does a comment matching `[OTA-Monitor] fixedIn` exist?
-- Check: does the `fixVersion` field have a value, OR does a comment match `Fixed in.*Advisory.*errata`?
-- If no fixedIn marker AND fix signal detected → post alert:
+- Check A: does a comment matching `[OTA-Monitor] fixedIn` exist? If yes → skip (already handled by bot)
+- Check B: does the `fixVersion` field have a value, OR does a comment match `Fixed in.*Advisory.*errata`? If no fix signal → skip (nothing to act on)
+- Check C: search openshift/cincinnati-graph-data for blocked-edge YAML files that reference this bug's Spike URL or risk name. If a matching file already has a `fixedIn` field set → skip (already handled manually before bot monitoring). This check prevents false alerts for pre-bot bugs that were resolved outside the bot's workflow.
+- If fix signal detected (Check B) AND no existing fixedIn in YAML (Check C) AND no bot marker (Check A) → post alert:
   "Fix detected for {BUG_KEY}. Version: {VERSION}. [Add FixedIn] [Skip]"
 - → NEXT BUG
 
