@@ -142,6 +142,8 @@ Bot logs [Skip] clicks, manual overrides, and missed detections to [OTA-2104](ht
 - [x] Snowflake credentials fixed (config override was clobbering inherited creds)
 - [x] @ota-monitor subteam mention working (<!subteam^STE7S7ZU2|@ota-monitor> syntax)
 - [ ] Prompt file updates deployed (PR #384 merged, awaiting deployment batch)
+- [x] Edge case audit: 6 fixes (re-alerting, phantom FAILEDs, manual Spike stale, sync lag, clone orphans, missing PRs)
+- [ ] Second prompt PR needed for Check C + edge case fixes (post-PR #384 commits)
 - [ ] Teach 8 Verified Knowledge lessons
 - [ ] Cyborg MRs merge (!1144 + !1153) → zero overrides
 "

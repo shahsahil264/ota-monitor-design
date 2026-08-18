@@ -670,9 +670,10 @@ Blocked-edge: <code>PacemakerEtcdQuorumLoss</code> &#183; YAML verified: no fixe
 </ul></div>
 <div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
 <li>Bot searches indexed Slack for FAILED messages</li>
-<li>Classifies each: stale branch, risk extension, CI failure</li>
+<li><strong>Verifies PR merge status first</strong> &#8212; most FAILEDs are phantom failures from already-merged PRs. If PR is merged, skip alert.</li>
+<li>Classifies remaining: stale branch, risk extension, CI failure</li>
 <li>Posts actionable alert with the right button</li>
-<li>You only see FAILEDs that need your attention</li>
+<li>You only see FAILEDs that actually need attention</li>
 </ul></div>
 </div>
 <div class="phase-slack">
@@ -681,7 +682,7 @@ Blocked-edge: <code>PacemakerEtcdQuorumLoss</code> &#183; YAML verified: no fixe
 <div class="slack-body">
 &#128293; <strong>Pipeline:</strong> Risk extension needed<br>
 <code>PacemakerEtcdQuorumLoss</code> needs extending to <strong>4.21.10</strong><br>
-Source: #osus-graph-data-automation FAILED message
+Source: #osus-graph-data-automation FAILED message &#183; PR not merged
 </div>
 <div class="slack-btns"><span class="sb g">Extend Risk</span><span class="sb n">Skip</span></div>
 </div>
@@ -847,6 +848,9 @@ openshift/cincinnati-graph-data (blocked-edges/, /propose-risk)
 <tr><td>10</td><td>Close Spike after merge</td><td>Purpose fulfilled</td></tr>
 <tr><td>11</td><td>No guardian loop</td><td>Polling is too expensive. Use events or scan.</td></tr>
 <tr><td>12</td><td>Human primary, bot safety net</td><td>~8 LLM calls/week</td></tr>
+<tr><td>13</td><td>Pipeline FAILED: verify PR merge first</td><td>Most FAILEDs are phantom failures from already-merged PRs</td></tr>
+<tr><td>14</td><td>Clone-aware orphan check</td><td>Don&#8217;t auto-close Spike if another open bug is linked</td></tr>
+<tr><td>15</td><td>Stale fallback to Spike creation date</td><td>Manual Spikes lack bot comment; use Spike date instead</td></tr>
 </table>
 
 <h2 style="margin-top:32px;margin-bottom:12px">Error Handling</h2>
@@ -859,6 +863,11 @@ openshift/cincinnati-graph-data (blocked-edges/, /propose-risk)
 <tr><td>Fork diverges from upstream</td><td>Workspace clones UPSTREAM, not fork</td></tr>
 <tr><td>Stale button clicked days later</td><td>Stale-button check re-reads bug state</td></tr>
 <tr><td>Slack indexing breaks</td><td>Pipeline check degrades. Jira lifecycle unaffected.</td></tr>
+<tr><td>Pipeline FAILED from merged PR</td><td>Verify PR merge status before alerting. Skip if merged.</td></tr>
+<tr><td>Orphaned Spike linked to clone</td><td>Check for other open bugs on same Spike. Alert instead of auto-close.</td></tr>
+<tr><td>Manual Spike &#8212; no bot comment</td><td>Fall back to Spike creation date for stale reminders.</td></tr>
+<tr><td>&#8220;Not a Blocker&#8221; bug re-detected</td><td>Rule 6 checks any linked Spike (open/closed) + [Feedback] comments.</td></tr>
+<tr><td>Snowflake sync lag (10:00 &#8594; 22:00)</td><td>Known edge case. 12h gap usually sufficient. Documented.</td></tr>
 </table>
 
 <h2 style="margin-top:32px;margin-bottom:12px">Risks</h2>
@@ -868,8 +877,14 @@ openshift/cincinnati-graph-data (blocked-edges/, /propose-risk)
 <tr><td>Label conflicts (non-exclusive)</td><td><span class="badge bg">Fixed</span> Priority ordering</td></tr>
 <tr><td>Slack parsing fragility</td><td><span class="badge bg">Fixed</span> Best-effort, Jira unaffected</td></tr>
 <tr><td>Button re-posting every cycle</td><td><span class="badge bg">Fixed</span> "offered" markers</td></tr>
-<tr><td>fixedIn JQL exclusion</td><td><span class="badge bg">Fixed</span> Secondary JQL</td></tr>
+<tr><td>fixedIn JQL exclusion</td><td><span class="badge bg">Fixed</span> Secondary JQL + YAML verify + date cutoff</td></tr>
 <tr><td>Label crash safety</td><td><span class="badge bg">Fixed</span> ADD-then-REMOVE</td></tr>
+<tr><td>&#8220;Not a Blocker&#8221; re-alerting</td><td><span class="badge bg">Fixed</span> Check any linked Spike (open/closed) + Feedback comments</td></tr>
+<tr><td>Pipeline phantom FAILEDs</td><td><span class="badge bg">Fixed</span> Verify PR merge status before alerting</td></tr>
+<tr><td>Manual Spike goes stale silently</td><td><span class="badge bg">Fixed</span> Fall back to Spike creation date</td></tr>
+<tr><td>Orphaned Spike with active clone</td><td><span class="badge bg">Fixed</span> Check for other linked open bugs before auto-close</td></tr>
+<tr><td>Missing blocked-edge PR</td><td><span class="badge bg">Fixed</span> Flag &#9888;&#65039; in daily status</td></tr>
+<tr><td>Snowflake sync lag double-alert</td><td><span class="badge by">Known</span> 12h gap usually sufficient; documented</td></tr>
 <tr><td>Version extension after fixedIn</td><td><span class="badge by">v2</span></td></tr>
 <tr><td>Early false positives</td><td><span class="badge bb">Rollout</span> Pause if &lt;90%</td></tr>
 </table>
@@ -917,11 +932,13 @@ Step 4: 10 detection rules (STOP at first match, NEXT BUG):
   Rule 4: Impact ready &#8594; [Accept&#8212;Block Edge] / [Revise] / [Not a Blocker]
   Rule 4b: Review reminder (24h)
   Rule 5: Stale request (48h) &#8594; team tagged via OrgData
+         Falls back to Spike creation date if no bot comment (manual Spikes)
   Rule 5b: Escalation (7d)
   Rule 6: New UpgradeBlocker &#8594; duplicate check &#8594; [Create Spike]
+         Checks any linked Spike (open/closed) + [Feedback] comments to prevent re-alerting
   Rule 6b: Already offered &#8594; skip
-  Orphaned: auto-close bot-created Spikes, alert for human-created
-Step 5: Pipeline check (best-effort Slack, message count or &#8220;data unavailable&#8221;)
+  Orphaned: auto-close bot-created Spikes (clone-aware &#8212; checks other linked bugs first)
+Step 5: Pipeline check (verify PR merge status before alerting &#8212; skip phantom FAILEDs)
 Step 6: Batch &gt;3 new bugs &#8594; summary table
 Step 6b: Gather PR data (OTA-relevant only, exclude dependabot)
 Step 7: Daily status (stage-grouped with emoji, always post)
