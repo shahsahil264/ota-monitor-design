@@ -61,13 +61,29 @@ Search indexed Slack history from #osus-graph-data-automation for messages in th
 
 ### Source 7: Bot activity metrics
 
-Use `query_jira` to search OCPBUGS bugs for comments matching `[OTA-Monitor]` from the last 7 days. Count by type:
-- Spike offered (alerts posted)
-- Spike created (spikes created)
-- Review offered (review buttons posted)
-- Blocked: (PRs linked after merge)
-- fixedIn: (fixedIn updates)
-- Response detected (auto-transitions)
+**Primary method** — read run summaries from OTA-2104:
+1. Call `get_jira_issue` on OTA-2104
+2. Filter comments for lines matching `[OTA-Monitor][Run]` with timestamps from the last 7 days
+3. Parse each line's key:value pairs and aggregate totals:
+   - alerts (total alerts posted)
+   - spikes (spike creation buttons posted)
+   - transitions (auto-transitions)
+   - reviews (review buttons posted)
+   - skips (bugs skipped)
+   - fixedIn (fixedIn updates)
+   - bugs_processed (total bugs inspected)
+
+Each `monitor-enriched` and `monitor-brief` run appends one `[OTA-Monitor][Run]` comment to OTA-2104 via `comment_on_jira_issue` at the end of its execution. With 10 runs per week (2/day × 5 days), expect ~10 run summary comments.
+
+**Data lag caveat**: Comment data comes from the Dataverse CLOUDRHAI_MARTS database, which syncs periodically. Comments from the Friday 10:00 UTC run may not be synced by the Friday 22:00 UTC handover (only 12 hours apart). Accept this gap — report metrics as covering Mon 10:00 through Thu 22:00 (9 of 10 runs). The missing run is always the most recent and least likely to have significant new activity.
+
+**Fallback** — if OTA-2104 has no `[OTA-Monitor][Run]` comments (bot just started, or ticket missing):
+1. Use the bugs already fetched for Sources 1-3 (do NOT re-query)
+2. For each bug, scan its comments (already available from `get_jira_issue` calls in Sources 2 and 9) for `[OTA-Monitor]` prefixes
+3. Count each marker type and filter to comments from the last 7 days
+4. This is approximate — it only covers bugs still in the active lifecycle, not bugs that were resolved and fell out of Source 1
+
+Note: JQL does NOT support searching comment body text. The `comment ~ "[OTA-Monitor]"` query will not work. This is a known Jira API limitation. Always use the primary method (OTA-2104 run summaries) or the fallback (per-bug comment inspection).
 
 ### Source 8: Feedback signals
 
@@ -94,7 +110,7 @@ Render the handover as an HTML artifact using `send_html_to_thread` for proper t
 ### Text summary (channel top-level):
 
 ```
-@ota-monitor — OTA RIT Handover — Week of {MONDAY_DATE} to {FRIDAY_DATE}
+<!subteam^STE7S7ZU2|@ota-monitor> — OTA RIT Handover — Week of {MONDAY_DATE} to {FRIDAY_DATE}
 
 Active blockers: {N} | Resolved this week: {N}
 Open PRs: {N} | Merged PRs: {N}
@@ -155,7 +171,7 @@ Table with:
 - OTA team: #forum-ocp-updates
 - Pipeline: #osus-graph-data-automation
 - Bot issues: #chai-users
-- Escalation: tag OTA reviewers in PR, or ping @ota-monitor
+- Escalation: tag OTA reviewers in PR, or ping <!subteam^STE7S7ZU2|@ota-monitor>
 
 **Components That Required Manual Routing**
 List any OCPBUGS components where Cyborg lookup failed and the OTA Monitor had to specify the project manually. If the same component appears 3+ weeks in a row, it needs an override entry in ota-component-mapping.yaml or a Cyborg MR to fix the mapping.

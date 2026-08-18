@@ -65,7 +65,7 @@ UpgradeBlocker stays forever. Lifecycle labels swap (ADD first, REMOVE second).
 |------|---------------------|
 | **1. Create Spike** | \"Is this the right team project?\" |
 | **2. Accept — Block Edge** | \"Is this really a blocker?\" (auto-triggers PR) |
-| **3. Add FixedIn** | \"Is this the right fix version?\" |
+| **3. Add FixedIn** | \"Is this the right fix version?\" (bot verifies graph-data YAML first) |
 
 Everything else is automatic.
 
@@ -138,7 +138,10 @@ Bot logs [Skip] clicks, manual overrides, and missed detections to [OTA-2104](ht
 - [x] Feedback ticket created ([OTA-2104](https://redhat.atlassian.net/browse/OTA-2104))
 - [x] Workspace confirmed: standard general_dev (no custom env needed)
 - [ ] Cyborg MRs merge (!1144 + !1153) → zero overrides
-- [ ] Chai Bot team deploys persona
+- [x] Chai Bot team deploys persona (live Aug 13, 2026)
+- [x] Snowflake credentials fixed (config override was clobbering inherited creds)
+- [x] @ota-monitor subteam mention working (<!subteam^STE7S7ZU2|@ota-monitor> syntax)
+- [ ] Prompt file updates deployed (PR #384 merged, awaiting deployment batch)
 - [ ] Teach 8 Verified Knowledge lessons
-- [ ] Go live
+- [ ] Cyborg MRs merge (!1144 + !1153) → zero overrides
 "

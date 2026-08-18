@@ -597,8 +597,9 @@ Labels updated: <code>+UpdateRecommendationsBlocked</code> <code>-ImpactStatemen
 <div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
 <li>Bot scans Closed bugs for <code>fixVersion</code> or advisory comment patterns</li>
 <li>Checks every 12 hours automatically</li>
-<li>Posts alert with version detected</li>
-<li>You just confirm the version is correct</li>
+<li><strong>Verifies against actual YAML</strong> &#8212; searches blocked-edge files in graph-data to confirm fixedIn isn&#8217;t already set before alerting</li>
+<li>Only alerts if fix signal exists AND YAML lacks fixedIn</li>
+<li>Eliminates false positives for pre-bot bugs handled manually</li>
 </ul></div>
 </div>
 <div class="phase-slack">
@@ -607,7 +608,7 @@ Labels updated: <code>+UpdateRecommendationsBlocked</code> <code>-ImpactStatemen
 <div class="slack-body">
 &#128230; <strong>Fix detected:</strong> <span class="link">OCPBUGS-104449</span><br>
 Version: <strong>4.21.9</strong> &#183; Advisory: <span class="link">RHSA-2026:52341</span><br>
-Blocked-edge: <code>PacemakerEtcdQuorumLoss</code>
+Blocked-edge: <code>PacemakerEtcdQuorumLoss</code> &#183; YAML verified: no fixedIn set
 </div>
 <div class="slack-btns"><span class="sb g">Add FixedIn &#8212; 4.21.9</span><span class="sb n">Skip</span></div>
 </div>
@@ -839,7 +840,7 @@ openshift/cincinnati-graph-data (blocked-edges/, /propose-risk)
 <tr><td>3</td><td>ADD first, REMOVE second</td><td>Crash-safe label transitions</td></tr>
 <tr><td>4</td><td>3-layer idempotency</td><td>Linked issues survive deletion</td></tr>
 <tr><td>5</td><td>Stateless runs</td><td>Jira IS the database</td></tr>
-<tr><td>6</td><td>Two JQL queries</td><td>Secondary catches fixedIn on Closed bugs</td></tr>
+<tr><td>6</td><td>Two JQL queries + YAML verify</td><td>Secondary catches fixedIn on Closed bugs; Check C verifies graph-data YAML before alerting</td></tr>
 <tr><td>7</td><td>/propose-risk for all YAML</td><td>Composition. Single source of truth.</td></tr>
 <tr><td>8</td><td>Always Spike URL</td><td>Handles private bugs automatically</td></tr>
 <tr><td>9</td><td>Stale-button check</td><td>Bug may have changed since alert</td></tr>
@@ -899,13 +900,18 @@ Key rules:
 
 <div class="pf">
 <div class="pf-h" onclick="toggle(this)"><h3>monitor-enriched.md <span class="badge bg">10:00 UTC Task</span></h3><span class="arrow">&#9654;</span></div>
-<div class="pf-body">8-step pipeline. Runs every weekday at 10:00 UTC. Always posts.
+<div class="pf-body">9-step pipeline. Runs every weekday at 10:00 UTC. Always posts.
 
 Step 1: Two JQL queries (primary: active bugs, secondary: fixedIn candidates)
+       Secondary has date cutoff (updated &gt;= 2026-08-13) to exclude pre-bot bugs
 Step 2: Filter by labels &#8212; only inspect bugs that MIGHT need action
 Step 3: get_jira_issue on candidates only (batches of 10, compact between)
 Step 4: 10 detection rules (STOP at first match, NEXT BUG):
-  Rule 1: fixedIn available &#8594; [Add FixedIn]
+  Rule 1: fixedIn available (3-check verification):
+    Check A: [OTA-Monitor] fixedIn comment exists? &#8594; skip (bot handled)
+    Check B: fix signal detected (fixVersion or advisory)? &#8594; if no, skip
+    Check C: search graph-data YAML for existing fixedIn? &#8594; if set, skip (pre-bot)
+    Alert ONLY if B=yes AND C=no AND A=no &#8594; [Add FixedIn]
   Rule 2: Active blocker &#8594; count only
   Rule 3: Spike in Code Review &#8594; AUTO-TRANSITION (fall-through to Rule 4)
   Rule 4: Impact ready &#8594; [Accept&#8212;Block Edge] / [Revise] / [Not a Blocker]
@@ -915,10 +921,12 @@ Step 4: 10 detection rules (STOP at first match, NEXT BUG):
   Rule 6: New UpgradeBlocker &#8594; duplicate check &#8594; [Create Spike]
   Rule 6b: Already offered &#8594; skip
   Orphaned: auto-close bot-created Spikes, alert for human-created
-Step 5: Pipeline check (best-effort Slack search for FAILEDs)
+Step 5: Pipeline check (best-effort Slack, message count or &#8220;data unavailable&#8221;)
 Step 6: Batch &gt;3 new bugs &#8594; summary table
-Step 7: Daily status (always post)
-Step 8: Error reporting</div>
+Step 6b: Gather PR data (OTA-relevant only, exclude dependabot)
+Step 7: Daily status (stage-grouped with emoji, always post)
+Step 8: Record run metrics to OTA-2104
+Step 9: Error reporting</div>
 </div>
 
 <div class="pf">

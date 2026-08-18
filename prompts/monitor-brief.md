@@ -34,3 +34,11 @@ Post to the channel top-level ONLY if:
 - The run itself failed (error)
 
 If NONE of the above apply, post heartbeat to thread and stop.
+
+## Run metrics
+
+Same as monitor-enriched.md Step 8: after posting (or deciding to stay silent), call `comment_on_jira_issue` on OTA-2104 with this run's counts. This ensures the weekly handover captures all 10 runs (5 enriched + 5 brief).
+
+Format: `[OTA-Monitor][Run] {DATE} {TIME} UTC | alerts:{N} spikes:{N} transitions:{N} reviews:{N} skips:{N} fixedIn:{N} bugs_processed:{N}`
+
+**Error isolation**: If `comment_on_jira_issue` fails, log the error but do NOT abort the run. Run metrics are nice-to-have, not mission-critical.
