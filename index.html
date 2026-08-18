@@ -71,7 +71,43 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 .pf-h.open .arrow{transform:rotate(90deg)}
 .pf-body{display:none;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;color:var(--t2);white-space:pre-wrap;max-height:400px;overflow-y:auto;padding:16px;background:var(--bg);border-radius:8px;border:1px solid var(--s3)}
 .pf-body.open{display:block}
-@media(max-width:768px){.grid-3{grid-template-columns:1fr}.flow{flex-direction:column}.fb{border-radius:0!important}.stats{flex-direction:column;gap:12px}}
+.phase{margin-bottom:32px;position:relative}
+.phase-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.phase-num{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.phase-meta{flex:1}
+.phase-meta h3{font-size:18px;margin:0}
+.phase-meta .phase-sub{font-size:12px;color:var(--t3);margin:0}
+.phase-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.phase-col{background:var(--s1);border:1px solid var(--s3);border-radius:10px;padding:18px;position:relative}
+.phase-col h4{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.phase-col ul{list-style:none;padding:0;margin:0}
+.phase-col li{font-size:13px;color:var(--t2);padding:4px 0;padding-left:18px;position:relative}
+.phase-col li:before{content:'';position:absolute;left:0;top:11px;width:6px;height:6px;border-radius:50%}
+.manual li:before{background:var(--red);opacity:0.6}
+.auto li:before{background:var(--green);opacity:0.8}
+.phase-tag{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600;margin-left:auto}
+.phase-slack{margin-top:16px}
+.slack-msg{background:#1a1d21;border:1px solid #383a3e;border-radius:8px;padding:14px 16px;margin:8px 0;font-size:13px;color:#d1d2d3;line-height:1.6}
+.slack-msg .slack-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.slack-msg .slack-ava{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.slack-msg .slack-name{font-weight:700;color:#fff;font-size:13px}
+.slack-msg .slack-time{font-size:11px;color:#616061}
+.slack-msg .slack-body{color:#d1d2d3}
+.slack-msg .slack-body strong{color:#fff}
+.slack-msg .slack-body .mention{color:#1d9bd1;background:rgba(29,155,209,0.1);padding:1px 3px;border-radius:3px}
+.slack-msg .slack-body .link{color:#1d9bd1;text-decoration:none}
+.slack-msg .slack-btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.slack-msg .slack-btns .sb{cursor:default}
+.savings-bar{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px}
+.savings-bar .sav-icon{font-size:16px}
+.savings-bar .sav-text{font-size:12px;color:var(--green)}
+.savings-bar .sav-time{font-weight:700;color:var(--green);font-size:14px;margin-left:auto}
+.phase-divider{height:32px;display:flex;align-items:center;justify-content:center;color:var(--s3);font-size:20px}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0}
+.summary-card{background:var(--s1);border:1px solid var(--s3);border-radius:10px;padding:16px;text-align:center}
+.summary-card .sc-num{font-size:28px;font-weight:700;margin-bottom:2px}
+.summary-card .sc-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+@media(max-width:768px){.grid-3{grid-template-columns:1fr}.flow{flex-direction:column}.fb{border-radius:0!important}.stats{flex-direction:column;gap:12px}.phase-cols{grid-template-columns:1fr}.summary-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -79,6 +115,7 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 <nav>
 <div class="logo"><span>OTA</span> Monitor</div>
 <button class="active" onclick="showTab('design')">Overview</button>
+<button onclick="showTab('lifecycle')">Lifecycle</button>
 <button onclick="showTab('arch')">Architecture</button>
 <button onclick="showTab('prompts')">Prompt Files</button>
 </nav>
@@ -210,7 +247,514 @@ code{font-family:'JetBrains Mono',monospace;background:var(--s2);color:var(--cya
 </div>
 </div>
 
-<!-- TAB 2: ARCHITECTURE -->
+<!-- TAB 2: LIFECYCLE -->
+<div class="tab" id="lifecycle">
+<div class="w" style="padding-top:72px">
+
+<h2 style="margin-bottom:4px">Lifecycle: Manual vs Automated</h2>
+<p style="color:var(--t2);margin-bottom:8px">Every phase of an UpgradeBlocker, from detection to resolution. What you used to do manually, what the bot handles now, and what it looks like in Slack.</p>
+
+<div class="summary-grid">
+<div class="summary-card"><div class="sc-num" style="color:var(--green)">13</div><div class="sc-label">Phases</div></div>
+<div class="summary-card"><div class="sc-num" style="color:var(--blue)">4</div><div class="sc-label">Button Clicks</div></div>
+<div class="summary-card"><div class="sc-num" style="color:var(--yellow)">1-2h</div><div class="sc-label">Daily Before</div></div>
+<div class="summary-card"><div class="sc-num" style="color:var(--cyan)">5 min</div><div class="sc-label">Daily Now</div></div>
+</div>
+
+<!-- PHASE 1 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(239,68,68,0.15);color:var(--red)">1</div>
+<div class="phase-meta"><h3>Detection</h3><p class="phase-sub">New UpgradeBlocker bug appears</p></div>
+<span class="phase-tag bg">Fully Auto</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Open the OTA triage board or run JQL manually every few hours</li>
+<li>Scan through results, compare against yesterday&#8217;s list to spot new ones</li>
+<li>Easy to miss if you&#8217;re busy, on PTO, or in a different timezone</li>
+<li>Weekend gaps &#8212; bugs can sit unnoticed for 48+ hours</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Bot runs JQL at 10:00 and 22:00 UTC every weekday automatically</li>
+<li>Posts alert to #ota-monitor-bot with bug details, component, priority</li>
+<li>You just read the alert when @ota-monitor pings you</li>
+<li>12h coverage gap max (vs days when manual)</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">6:10 AM</span></div>
+<div class="slack-body">
+<span class="mention">@ota-monitor</span> &#8212; Daily Status &#8212; 2026-08-18<br><br>
+&#128308; <strong>1 item needs attention</strong><br><br>
+&#128308; <strong>New/Untriaged (1):</strong><br>
+&#8226; <span class="link">OCPBUGS-104449</span> &#8212; Pacemaker etcd failure during 4.21 upgrade<br>
+&nbsp;&nbsp;HA / pacemaker &#183; Critical &#183; NEW<br>
+&nbsp;&nbsp;Suggested project: OCPEDGE
+</div>
+<div class="slack-btns"><span class="sb g">Create in OCPEDGE</span><span class="sb n">Skip</span><span class="sb r">Escalate</span></div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per day</span><span class="sav-time">~15 min</span></div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 2 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(59,130,246,0.15);color:var(--blue)">2</div>
+<div class="phase-meta"><h3>Spike Creation</h3><p class="phase-sub">Gate 1 &#8212; Create impact statement in component team&#8217;s project</p></div>
+<span class="phase-tag bb">1 Click</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Figure out which Jira project owns the component (check Cyborg/OrgData, ask around)</li>
+<li>Create a new Spike issue in that project manually</li>
+<li>Copy-paste the 5-question impact statement template into description</li>
+<li>Set type=Spike, priority=Critical, assignee=same as bug</li>
+<li>Link the Spike to the OCPBUGS bug (&#8220;is related to&#8221;)</li>
+<li>Add <code>ImpactStatementRequested</code> label to the OCPBUGS bug</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Click <strong>[Create in OCPEDGE]</strong> button</li>
+<li>Bot routes via Cyborg (9/11 auto, 2 overrides pending MRs)</li>
+<li>Creates Spike with template, links, labels &#8212; all automatic</li>
+<li>Posts confirmation with Spike link</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">6:12 AM</span></div>
+<div class="slack-body">
+&#9989; <strong>Spike created:</strong> <span class="link">OCPEDGE-1234</span><br>
+&#8226; Linked to <span class="link">OCPBUGS-104449</span><br>
+&#8226; Label <code>ImpactStatementRequested</code> added<br>
+&#8226; Assignee: jsmith (from OCPBUGS bug)<br>
+&#8226; Comment: <code>[OTA-Monitor] Impact statement spike created: OCPEDGE-1234</code>
+</div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per bug</span><span class="sav-time">~10-15 min</span></div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 3 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(234,179,8,0.15);color:var(--yellow)">3</div>
+<div class="phase-meta"><h3>Waiting on Component Team</h3><p class="phase-sub">Stale monitoring with automatic reminders</p></div>
+<span class="phase-tag bg">Fully Auto</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Keep a mental list or spreadsheet of which bugs are waiting</li>
+<li>Manually check each Spike every day or two to see if anyone responded</li>
+<li>Write reminder comments yourself after a few days</li>
+<li>Easy to forget, especially with 5+ bugs in flight</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Bot checks every 12 hours automatically</li>
+<li>Auto-posts reminder at 48 hours with team tagged via OrgData</li>
+<li>Posts escalation warning at 7 days citing the enhancement doc</li>
+<li>You do nothing until the bot tells you something changed</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">6:10 AM</span></div>
+<div class="slack-body">
+&#9888;&#65039; <strong>STALE:</strong> <span class="link">OCPBUGS-104449</span> &#8212; impact statement requested <strong>5 days</strong> ago.<br>
+Team: OCPEDGE &#183; Assignee: jsmith<br><br>
+<em>&#8220;In the absence of a response within 7 days, we may declare a conditional update risk based on our current understanding.&#8221;</em>
+</div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per day</span><span class="sav-time">~10 min</span></div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 4 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(34,197,94,0.15);color:var(--green)">4</div>
+<div class="phase-meta"><h3>Auto-Transition</h3><p class="phase-sub">Component team responds &#8212; labels transition automatically</p></div>
+<span class="phase-tag bg">Fully Auto</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Notice that a Spike moved to &#8220;Code Review&#8221; (team responded)</li>
+<li>Go to the OCPBUGS bug</li>
+<li>Add <code>ImpactStatementProposed</code> label</li>
+<li>Remove <code>ImpactStatementRequested</code> label</li>
+<li>Easy to miss &#8212; you&#8217;d only catch this if actively checking Spikes</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Bot detects Spike status change to &#8220;Code Review&#8221;</li>
+<li>Transitions labels automatically (ADD first, REMOVE second &#8212; crash-safe)</li>
+<li>Posts comment <code>[OTA-Monitor] Response detected</code></li>
+<li>Immediately falls through to Phase 5 &#8212; posts review buttons</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">10:10 AM</span></div>
+<div class="slack-body">
+&#128260; <strong>Auto-transition:</strong> <span class="link">OCPBUGS-104449</span><br>
+<code>ImpactStatementRequested</code> &#8594; <code>ImpactStatementProposed</code><br>
+Spike <span class="link">OCPEDGE-1234</span> moved to Code Review by jsmith.
+</div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per transition</span><span class="sav-time">~5 min</span></div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 5 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(168,85,247,0.15);color:var(--purple)">5</div>
+<div class="phase-meta"><h3>OTA Review</h3><p class="phase-sub">Gate 2 &#8212; You read the impact statement and decide</p></div>
+<span class="phase-tag by">You Decide</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Open the Spike, read the impact statement answers</li>
+<li>Decide: is this really a blocker? Are the affected versions correct?</li>
+<li>This part is still a human judgment call &#8212; unchanged</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Bot posts buttons with review reminder after 24h</li>
+<li>You still make the same judgment call</li>
+<li>But you don&#8217;t hunt for which bugs need review &#8212; bot brings them to you</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">10:10 AM</span></div>
+<div class="slack-body">
+&#128203; <strong>Impact Statement Ready</strong> &#8212; <span class="link">OCPBUGS-104449</span><br>
+Pacemaker etcd failure during 4.21 upgrade<br>
+Spike: <span class="link">OCPEDGE-1234</span> (Code Review)<br><br>
+Affected: 4.21.x &#183; Scope: baremetal HA clusters &#183; ~3% of fleet<br>
+Impact: etcd quorum loss, cluster unrecoverable
+</div>
+<div class="slack-btns"><span class="sb g">Accept &#8212; Block Edge</span><span class="sb n">Request Revision</span><span class="sb r">Not a Blocker</span></div>
+</div>
+</div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 6 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(59,130,246,0.15);color:var(--blue)">6</div>
+<div class="phase-meta"><h3>Blocked-Edge PR</h3><p class="phase-sub">Generate YAML, validate, open PR &#8212; all from one click</p></div>
+<span class="phase-tag bb">1 Click</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Clone openshift/cincinnati-graph-data (or pull latest)</li>
+<li>Create a new branch</li>
+<li>Write the blocked-edge YAML file by hand (risk name, from/to regex, URL)</li>
+<li>Run <code>hack/validate-blocked-edges.py</code> to check</li>
+<li>Fix validation errors, re-run</li>
+<li>Push to your fork, open a PR</li>
+<li>~20-30 min per bug, error-prone</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Click <strong>[Accept &#8212; Block Edge]</strong></li>
+<li>Bot updates labels (<code>UpdateRecommendationsBlocked</code>)</li>
+<li>Spins up workspace, runs <code>/propose-risk</code></li>
+<li>Validates with <code>hack/validate-blocked-edges.py</code></li>
+<li>Pushes to fork, opens PR to upstream</li>
+<li>Posts PR link for review</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">10:15 AM</span></div>
+<div class="slack-body">
+&#128230; <strong>Blocked-edge PR opened:</strong> <span class="link">#10456</span><br>
+&#8226; Risk: <code>PacemakerEtcdQuorumLoss</code><br>
+&#8226; From: <code>4.20.*</code> &#8594; To: <code>4.21.0-4.21.8</code><br>
+&#8226; URL: <span class="link">OCPEDGE-1234</span> (Spike)<br>
+&#8226; Validated &#10003; &#183; Branch: <code>blocked-edges/OCPBUGS-104449-create</code><br><br>
+Labels updated: <code>+UpdateRecommendationsBlocked</code> <code>-ImpactStatementProposed</code>
+</div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per bug</span><span class="sav-time">~20-30 min</span></div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 7 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(113,113,122,0.15);color:var(--t3)">7</div>
+<div class="phase-meta"><h3>PR Review &#38; Merge</h3><p class="phase-sub">OTA reviewers review on GitHub</p></div>
+<span class="phase-tag by">Manual</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--yellow)">&#128992; Before &#38; Now (Same)</h4><ul>
+<li>Review the PR diff on GitHub</li>
+<li>Check YAML correctness (risk name, versions, URL)</li>
+<li>Approve and merge</li>
+<li>Bot can&#8217;t replace human review on graph-data PRs</li>
+<li>Bot monitors merge status on next scan</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--t3)">&#8505;&#65039; Why Not Automated</h4><ul>
+<li>Blocked-edge PRs affect real upgrade paths for all OCP users</li>
+<li>Wrong regex can block thousands of clusters unnecessarily</li>
+<li>Wrong &#8220;from&#8221; version can leave users exposed</li>
+<li>OTA team review is a critical safety gate</li>
+</ul></div>
+</div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 8 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(34,197,94,0.15);color:var(--green)">8</div>
+<div class="phase-meta"><h3>Post-Merge Cleanup</h3><p class="phase-sub">Comment on bug, close Spike &#8212; all automatic</p></div>
+<span class="phase-tag bg">Fully Auto</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>After PR merges, go back to the OCPBUGS bug</li>
+<li>Add a comment noting the blocked-edge PR and risk name</li>
+<li>Go to the Spike, close it with resolution &#8220;Done&#8221;</li>
+<li>Add a comment on the Spike noting it&#8217;s complete</li>
+<li>Easy to forget &#8212; Spikes often left open for weeks</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Bot detects PR merged on next scan</li>
+<li>Comments <code>[OTA-Monitor] Blocked: {risk} &#8212; PR</code> on OCPBUGS bug</li>
+<li>Closes the Spike automatically (resolution: Done)</li>
+<li>You do nothing</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">6:10 AM</span></div>
+<div class="slack-body">
+&#9989; <strong>PR merged:</strong> <span class="link">#10456</span> &#8212; PacemakerEtcdQuorumLoss<br>
+&#8226; <span class="link">OCPBUGS-104449</span>: comment added<br>
+&#8226; <span class="link">OCPEDGE-1234</span>: Spike closed (Done)
+</div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per bug</span><span class="sav-time">~5 min</span></div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 9 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(6,182,212,0.15);color:var(--cyan)">9</div>
+<div class="phase-meta"><h3>Monitoring</h3><p class="phase-sub">Bug sits in UpdateRecommendationsBlocked &#8212; waiting for fix</p></div>
+<span class="phase-tag bg">Fully Auto</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Keep track of how many active blockers exist</li>
+<li>Check the triage board periodically</li>
+<li>Report counts in standup or status updates</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Daily status includes count and each bug with PR status inline</li>
+<li>Shows linked blocked-edge PR and whether it&#8217;s merged or open</li>
+<li>Weekly handover generates full report automatically</li>
+</ul></div>
+</div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 10 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(234,179,8,0.15);color:var(--yellow)">10</div>
+<div class="phase-meta"><h3>fixedIn Detection</h3><p class="phase-sub">Gate 3 &#8212; Fix ships, bot detects it</p></div>
+<span class="phase-tag bg">Fully Auto</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Watch for z-stream releases and advisories (errata emails, Slack)</li>
+<li>Cross-reference each advisory against your active blockers list</li>
+<li>Check if the fix is included in the release</li>
+<li>Very easy to miss &#8212; advisories come at random times</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Bot scans Closed bugs for <code>fixVersion</code> or advisory comment patterns</li>
+<li>Checks every 12 hours automatically</li>
+<li>Posts alert with version detected</li>
+<li>You just confirm the version is correct</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">6:10 AM</span></div>
+<div class="slack-body">
+&#128230; <strong>Fix detected:</strong> <span class="link">OCPBUGS-104449</span><br>
+Version: <strong>4.21.9</strong> &#183; Advisory: <span class="link">RHSA-2026:52341</span><br>
+Blocked-edge: <code>PacemakerEtcdQuorumLoss</code>
+</div>
+<div class="slack-btns"><span class="sb g">Add FixedIn &#8212; 4.21.9</span><span class="sb n">Skip</span></div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per day</span><span class="sav-time">~15 min</span></div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 11 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(59,130,246,0.15);color:var(--blue)">11</div>
+<div class="phase-meta"><h3>fixedIn PR</h3><p class="phase-sub">Update the YAML with the fix version</p></div>
+<span class="phase-tag bb">1 Click</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Open the blocked-edge YAML file in the repo</li>
+<li>Add the <code>fixedIn: 4.21.9</code> field</li>
+<li>Validate, push, open PR</li>
+<li>Same manual git workflow as Phase 6</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Click <strong>[Add FixedIn &#8212; 4.21.9]</strong></li>
+<li>Bot generates PR with the fixedIn update</li>
+<li>You review and merge on GitHub</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">6:12 AM</span></div>
+<div class="slack-body">
+&#9989; <strong>fixedIn PR opened:</strong> <span class="link">#10501</span><br>
+&#8226; Risk: <code>PacemakerEtcdQuorumLoss</code><br>
+&#8226; fixedIn: <code>4.21.9</code><br>
+&#8226; Branch: <code>blocked-edges/OCPBUGS-104449-fixedin</code>
+</div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per bug</span><span class="sav-time">~10-15 min</span></div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 12 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(239,68,68,0.15);color:var(--red)">12</div>
+<div class="phase-meta"><h3>Pipeline FAILED Detection</h3><p class="phase-sub">Monitors #osus-graph-data-automation for failures</p></div>
+<span class="phase-tag bg">Fully Auto</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Watch #osus-graph-data-automation throughout the day</li>
+<li>Read each FAILED message, figure out the cause</li>
+<li>Take appropriate action (delete branch, recreate PR, extend risk)</li>
+<li>High noise channel &#8212; most messages are successes you ignore</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Bot searches indexed Slack for FAILED messages</li>
+<li>Classifies each: stale branch, risk extension, CI failure</li>
+<li>Posts actionable alert with the right button</li>
+<li>You only see FAILEDs that need your attention</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">6:10 AM</span></div>
+<div class="slack-body">
+&#128293; <strong>Pipeline:</strong> Risk extension needed<br>
+<code>PacemakerEtcdQuorumLoss</code> needs extending to <strong>4.21.10</strong><br>
+Source: #osus-graph-data-automation FAILED message
+</div>
+<div class="slack-btns"><span class="sb g">Extend Risk</span><span class="sb n">Skip</span></div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per day</span><span class="sav-time">~10 min</span></div>
+</div>
+
+<div class="phase-divider">&#8595;</div>
+
+<!-- PHASE 13 -->
+<div class="phase">
+<div class="phase-head">
+<div class="phase-num" style="background:rgba(6,182,212,0.15);color:var(--cyan)">13</div>
+<div class="phase-meta"><h3>Daily Status &#38; Weekly Handover</h3><p class="phase-sub">Reporting, status updates, rotation handoff</p></div>
+<span class="phase-tag bg">Fully Auto</span>
+</div>
+<div class="phase-cols">
+<div class="phase-col manual"><h4 style="color:var(--red)">&#128308; Before (Manual)</h4><ul>
+<li>Write a daily status by querying Jira, checking GitHub, scanning Slack</li>
+<li>Write a weekly handover every Friday with all context for next monitor</li>
+<li>~30-60 min for the handover, easy to miss things</li>
+<li>Inconsistent format between different monitors</li>
+</ul></div>
+<div class="phase-col auto"><h4 style="color:var(--green)">&#9989; Now (Automated)</h4><ul>
+<li>Daily status at 10:00 UTC &#8212; full breakdown by lifecycle stage</li>
+<li>Weekly handover HTML from 9 data sources, cross-checked counts</li>
+<li>Consistent format every week</li>
+<li>You review for accuracy, that&#8217;s it</li>
+</ul></div>
+</div>
+<div class="phase-slack">
+<div class="slack-msg">
+<div class="slack-head"><div class="slack-ava">&#129302;</div><span class="slack-name">OTA Monitor</span><span class="slack-time">6:08 PM</span></div>
+<div class="slack-body">
+<span class="mention">@ota-monitor</span> &#8212; OTA RIT Handover &#8212; Week of Aug 18&#8211;22<br><br>
+Active blockers: <strong>3</strong> &#183; Resolved this week: <strong>1</strong><br>
+Open PRs: <strong>2</strong> &#183; Merged PRs: <strong>1</strong><br>
+Items needing immediate attention: <strong>2</strong><br><br>
+Full report attached below &#11015;&#65039;
+</div>
+</div>
+</div>
+<div class="savings-bar"><span class="sav-icon">&#9201;</span><span class="sav-text">Time saved per week</span><span class="sav-time">~30-60 min</span></div>
+</div>
+
+<!-- SUMMARY TABLE -->
+<div class="sec" style="margin-top:32px">
+<h2 style="margin-bottom:16px">Time Savings Summary</h2>
+<table>
+<tr><th>Phase</th><th>Before</th><th>Now</th><th>Savings</th></tr>
+<tr><td><strong>Detection</strong></td><td>~15 min/day checking JQL</td><td>Bot alerts you</td><td><span class="badge bg">~15 min</span></td></tr>
+<tr><td><strong>Spike creation</strong></td><td>~10-15 min per bug</td><td>1 click</td><td><span class="badge bg">~12 min</span></td></tr>
+<tr><td><strong>Stale monitoring</strong></td><td>~10 min/day checking Spikes</td><td>Bot reminds</td><td><span class="badge bg">~10 min</span></td></tr>
+<tr><td><strong>Label transitions</strong></td><td>~5 min per transition</td><td>Automatic</td><td><span class="badge bg">~5 min</span></td></tr>
+<tr><td><strong>OTA review</strong></td><td>Same judgment call</td><td>Bot brings it to you</td><td><span class="badge by">~2 min</span></td></tr>
+<tr><td><strong>Blocked-edge PR</strong></td><td>~20-30 min per bug</td><td>1 click</td><td><span class="badge bg">~25 min</span></td></tr>
+<tr><td><strong>PR review</strong></td><td>Same</td><td>Same</td><td><span class="badge" style="background:var(--s2);color:var(--t3)">0</span></td></tr>
+<tr><td><strong>Post-merge cleanup</strong></td><td>~5 min per bug</td><td>Automatic</td><td><span class="badge bg">~5 min</span></td></tr>
+<tr><td><strong>fixedIn detection</strong></td><td>~15 min/day watching advisories</td><td>Bot alerts</td><td><span class="badge bg">~15 min</span></td></tr>
+<tr><td><strong>fixedIn PR</strong></td><td>~10-15 min per bug</td><td>1 click</td><td><span class="badge bg">~12 min</span></td></tr>
+<tr><td><strong>Pipeline monitoring</strong></td><td>~10 min/day watching Slack</td><td>Bot alerts on FAILEDs</td><td><span class="badge bg">~10 min</span></td></tr>
+<tr><td><strong>Daily status</strong></td><td>~15 min writing status</td><td>Automatic</td><td><span class="badge bg">~15 min</span></td></tr>
+<tr><td><strong>Weekly handover</strong></td><td>~30-60 min every Friday</td><td>Automatic HTML report</td><td><span class="badge bg">~45 min</span></td></tr>
+</table>
+<div class="savings-bar" style="margin-top:16px;background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.25)">
+<span class="sav-icon" style="font-size:24px">&#128640;</span>
+<span class="sav-text" style="font-size:14px"><strong>Total daily effort: ~1-2 hours &#8594; ~5 minutes of button clicks</strong></span>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- TAB 3: ARCHITECTURE -->
 <div class="tab" id="arch">
 <div class="w" style="padding-top:72px">
 
