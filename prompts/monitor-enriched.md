@@ -134,15 +134,24 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
     - If human-created: post alert only: "Orphaned Spike: {SPIKE_KEY} still open but {BUG_KEY} is Closed. Please review and close manually."
 - → NEXT BUG
 
-## Step 5: Pipeline check (best-effort)
+## Step 5: Pipeline check (best-effort, two-phase)
 
-Search indexed Slack history from #osus-graph-data-automation for recent messages containing "FAILED".
+**Important**: The indexed Slack search uses SEMANTIC similarity, not keyword matching. A search for "FAILED" will return messages that are semantically related to failure — not just messages containing the literal word "FAILED." This means you cannot rely on the search query alone to find FAILED messages. Use a two-phase approach:
 
-**Track search results**: Record the number of messages searched. This is needed for the daily status to distinguish "confirmed healthy" from "channel not indexed."
+### Phase 1 — Confirm channel is searchable
+
+Search #osus-graph-data-automation for any recent messages (broad query like "recent pipeline activity" or "promotion status"). This confirms the channel is indexed and accessible. Record the number of messages returned.
+
+- If Phase 1 returns results → channel is confirmed searchable. Proceed to Phase 2.
+- If Phase 1 returns nothing → report: "🔄 Pipeline: ⚠️ data unavailable (channel not indexed or search failed)"
+
+### Phase 2 — Keyword scan for FAILEDs
+
+Use `result_grep` or `grep_text` on the messages returned in Phase 1 to find lines containing the literal substring "FAILED". This is a text match, not a semantic search — it will only match messages that actually contain the word.
 
 **Before alerting on any FAILED message**, check if the associated PR (if mentioned) is already merged. Most FAILEDs are phantom failures from already-merged PRs — the pipeline retried after the PR landed. If the PR is merged, skip the alert entirely.
 
-For each FAILED message found:
+For each FAILED message found via grep:
 - **First**: extract the PR number from the message. Check if that PR is merged in openshift/cincinnati-graph-data. If merged → skip (phantom failure, already resolved).
 - If message contains "branch.*already exists" → classify as "stale branch." Alert: "Pipeline: stale branch blocking promotion. Delete branch from bot fork."
 - If message contains "extend the risk" or "declare a fix version" → classify as "risk extension needed." Alert: "Pipeline: risk extension needed. {RISK_NAME} needs extending to {VERSION}. [Extend Risk] [Skip]"
@@ -150,14 +159,16 @@ For each FAILED message found:
 - If message indicates merge conflict or CI failure → classify as "PR failure." Alert: "Pipeline: promotion PR failed. Recreate PR."
 - If message contains "Recommend waiting" → ignore (informational)
 
-If Slack search returns results (even zero FAILEDs), report as confirmed:
-- "🔄 Pipeline: Healthy (searched {N} messages, 0 FAILEDs in last 2 days)"
+### Classification
 
-If Slack search fails, times out, or the channel is not indexed:
-- Report honestly: "🔄 Pipeline: ⚠️ data unavailable (channel not indexed or search failed)"
-- Do NOT report "No FAILED messages detected" when search returned nothing — that is ambiguous.
-- Continue to Step 6. Do NOT abort the run.
-- The Jira lifecycle monitoring (Steps 1-4) is the reliable core. Pipeline check is best-effort and supplementary. A Slack indexing outage must never take down the Jira monitoring.
+| Phase 1 | Phase 2 | Report |
+|---------|---------|--------|
+| Results returned | 0 FAILEDs in grep | 🔄 Pipeline: Healthy (searched {N} messages, 0 FAILEDs in last 2 days) |
+| Results returned | N FAILEDs in grep | Process each per rules above, report count |
+| No results | — | 🔄 Pipeline: ⚠️ data unavailable (channel not indexed or search failed) |
+
+Continue to Step 6 regardless of pipeline check outcome. Do NOT abort the run.
+The Jira lifecycle monitoring (Steps 1-4) is the reliable core. Pipeline check is best-effort and supplementary. A Slack indexing outage must never take down the Jira monitoring.
 
 ## Step 6: Batch alert check
 
