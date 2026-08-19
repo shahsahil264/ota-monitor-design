@@ -9,7 +9,7 @@ Follow the SAME Steps 1-6b as monitor-enriched.md:
 2. Filter candidates by labels
 3. Inspect candidates with get_jira_issue (batches of 10, compact between)
 4. Classify using the same 10 priority-ordered rules
-5. Pipeline check (best-effort Slack search — report message count or "data unavailable")
+5. Pipeline check (two-phase: broad semantic search to confirm channel, then keyword grep for "FAILED")
 6. Batch alert check (>3 new bugs → summary table)
 6b. Gather PR data (same filter: OTA-relevant only, no dependabot)
 
@@ -20,7 +20,7 @@ Follow the SAME Steps 1-6b as monitor-enriched.md:
 - **Heartbeat to thread only.** If nothing changed, post to a thread (not top-level): "✓ OTA Monitor ran at {TIME} UTC. No changes detected."
 - **Same error reporting.** If the run fails, post error to channel top-level.
 - **Same PR filtering.** Only OTA-relevant PRs (same criteria as enriched). No dependabot, no unrelated feature PRs.
-- **Same pipeline reporting.** Report message count searched or "data unavailable" — never ambiguous "No FAILED messages detected."
+- **Same pipeline reporting.** Two-phase approach: Phase 1 broad semantic search confirms channel is searchable, Phase 2 uses `result_grep`/`grep_text` for literal "FAILED" substring. Report "Healthy (searched N messages, 0 FAILEDs)" or "data unavailable" — never ambiguous "No FAILED messages detected." Semantic search alone cannot reliably detect the keyword "FAILED" — it returns semantically similar content, not exact matches.
 
 ## When to post
 

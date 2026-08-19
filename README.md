@@ -73,7 +73,7 @@ Everything else is automatic.
 
 | Time | What | Posts? |
 |------|------|--------|
-| **10:00 UTC** (weekdays) | Daily status + Jira triage + pipeline check | Always |
+| **10:00 UTC** (weekdays) | Daily status + Jira triage + pipeline check (two-phase: semantic search + keyword grep) | Always |
 | **22:00 UTC** (weekdays) | Same checks | Only if action needed |
 | **Fri 22:00 UTC** | Weekly handover (HTML from 9 sources) | Always |
 
@@ -143,7 +143,8 @@ Bot logs [Skip] clicks, manual overrides, and missed detections to [OTA-2104](ht
 - [x] @ota-monitor subteam mention working (<!subteam^STE7S7ZU2|@ota-monitor> syntax)
 - [ ] Prompt file updates deployed (PR #384 merged, awaiting deployment batch)
 - [x] Edge case audit: 6 fixes (re-alerting, phantom FAILEDs, manual Spike stale, sync lag, clone orphans, missing PRs)
-- [ ] Second prompt PR needed for Check C + edge case fixes (post-PR #384 commits)
+- [x] Two-phase pipeline check: semantic search + keyword grep (fixes false "data unavailable" since Aug 13)
+- [ ] Second prompt PR needed for Check C + edge case fixes + pipeline fix (post-PR #384 commits)
 - [ ] Teach 8 Verified Knowledge lessons
 - [ ] Cyborg MRs merge (!1144 + !1153) → zero overrides
 "
