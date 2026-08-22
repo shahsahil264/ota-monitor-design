@@ -64,6 +64,8 @@ Every action you take MUST leave a structured comment on the OCPBUGS bug:
 
 These comments are your memory. You have no cross-run state — you reconstruct what you've done by reading these comments.
 
+**Formatting:** Any Jira issue key referenced in a comment (e.g., `{SPIKE_KEY}`) should be formatted as a full URL or markdown link (`[SPIKE_KEY](https://redhat.atlassian.net/browse/SPIKE_KEY)`) rather than bare plain text, so the reference is clickable in the Jira UI.
+
 ## Action Buttons
 
 **Tag the OTA Monitor rotation in every top-level Slack post** so the current rotation monitor gets notified. Thread replies don't need the tag.
@@ -140,7 +142,28 @@ conditional update risk based on our current understanding.
 - Assignee: Same as the OCPBUGS bug's assignee
 - Label: UpgradeBlocker
 - Link: "is related to" (from Spike to OCPBUGS bug)
-- URL for blocked-edge `url` field: ALWAYS use the Spike URL, never the OCPBUGS URL.
+- URL for blocked-edge `url` field: ALWAYS use the Spike URL, never the OCPBUGS URL. This applies to the `url` field AND any generated `message` text — NEVER reference the OCPBUGS URL anywhere in customer-facing content, even as a "See also" link. OCPBUGS bugs can be private/embargoed; only the Spike is safe to expose.
+
+## Reading Impact Statement Answers (before generating YAML)
+
+The impact statement template contains `(example: ...)` placeholder text under each question. Before treating any answer as real data:
+
+- **Detect unanswered questions**: if a question's answer area contains ONLY the `(example: ...)` text with nothing else added above it, that question is UNANSWERED — do not extract data from the example text and do not treat it as a real answer.
+- **Detect partially-answered sections**: some questions may have a real answer AND the example text left below it (this is normal — humans often don't delete the example). Use the real answer, ignore the example.
+- **If a required question is unanswered** (no real answer, only the example remains): STOP before generating the blocked-edge YAML. Tell the human which specific question(s) are still unanswered and ask them to provide the missing information — do not guess, infer from the example, or silently omit the field.
+- Required questions for YAML generation: affected upgrade path (from/to versions) and remediation. Cluster type, impact severity, and regression status inform the `message` text but a plausible default may be used if genuinely unavailable — flag this in the approval request.
+
+## Pre-Flight Checklist (before presenting generated YAML for Gate 2 approval)
+
+**Do not rely on `hack/validate-blocked-edges.py` passing as proof the YAML is correct.** The validator only enforces: risk name matches `^[A-Z][A-Za-z0-9_]*$` (CamelCase), and `to`/`from` are present. It does NOT enforce regex escaping style, does NOT require `matchingRules` as a field, and does NOT check file naming. A YAML can pass validation and still violate real production convention (wrong file naming, missing `matchingRules`, inconsistent style) — validation passing is necessary but not sufficient.
+
+Before showing a human the generated blocked-edge YAML for approval, verify it against a real recent file in the target repo — do not rely solely on memorized conventions, which may be incomplete or stale:
+
+1. Search `blocked-edges/` for 1-2 recent files (any risk) as ground truth
+2. Confirm the generated YAML's structure matches: file naming (`<version>-<RiskName>.yaml`), risk name casing (CamelCase, no version suffix — validator-enforced), `matchingRules` field present (`type: Always` or `type: PromQL` — convention, not validator-enforced, but present in all real production files), and `url` points to the Spike only
+3. If the generated YAML deviates from what real files show, fix it before presenting — do not present something you haven't checked against a real example
+4. Note in the approval request which real file you checked against, so the human can verify your comparison
+5. Regex style in `from`/`to` (character-class `4[.]21[.]` vs backslash-escape `4\.21\.`) is NOT enforced by the validator or a strict convention — either is acceptable, no need to flag this as a deviation
 
 ## Component → Project Routing
 
