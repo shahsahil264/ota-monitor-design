@@ -110,11 +110,11 @@ Render the handover as an HTML artifact using `send_html_to_thread` for proper t
 ### Text summary (channel top-level):
 
 ```
-<!subteam^STE7S7ZU2|@ota-monitor> — OTA RIT Handover — Week of {MONDAY_DATE} to {FRIDAY_DATE}
+<!subteam^STE7S7ZU2|@ota-monitor> — OTA RIT Handover — Week of <MONDAY_DATE> to <FRIDAY_DATE>
 
-Active blockers: {N} | Resolved this week: {N}
-Open PRs: {N} | Merged PRs: {N}
-Items needing immediate attention: {N}
+Active blockers: <N> | Resolved this week: <N>
+Open PRs: <N> | Merged PRs: <N>
+Items needing immediate attention: <N>
 
 Full report attached below ⬇️
 ```
@@ -147,25 +147,25 @@ Open: Table with PR, Title, Age, CI, Review (only PRs not tied to a specific bug
 Merged: Table with PR, Title, Merged Date
 
 **Pipeline Health**
-- Total FAILEDs this week: {N}
-- FAILEDs with PRs: {N} (handled)
-- FAILEDs without PRs: {N} (gaps)
+- Total FAILEDs this week: <N>
+- FAILEDs with PRs: <N> (handled)
+- FAILEDs without PRs: <N> (gaps)
 - Notable failures: brief summary if any
 - Stale "Recommend waiting" messages: list any advisories that have been in "Recommend waiting" status for >14 days. These are unusual and worth the incoming monitor's attention.
 
 **Bot Performance**
 Table with:
 | Metric | Count |
-| Alerts posted | {N} |
-| Spikes created | {N} |
-| Review buttons posted | {N} |
-| PRs linked | {N} |
-| fixedIn updates | {N} |
-| Auto-transitions | {N} |
-| Skips (potential FPs) | {N} |
-| Missed detections | {N} |
-| Avg detection latency | {N}h |
-| Max detection latency | {N}h |
+| Alerts posted | <N> |
+| Spikes created | <N> |
+| Review buttons posted | <N> |
+| PRs linked | <N> |
+| fixedIn updates | <N> |
+| Auto-transitions | <N> |
+| Skips (potential FPs) | <N> |
+| Missed detections | <N> |
+| Avg detection latency | <N>h |
+| Max detection latency | <N>h |
 
 **Key Contacts**
 - OTA team: #forum-ocp-updates
@@ -188,7 +188,7 @@ After generating the handover, verify:
 - Count of "Resolved" == count from Source 3 JQL
 - Count of "Open PRs" == count from Source 4 GitHub query
 
-If any count doesn't match, flag it in the output: "⚠️ Count mismatch: handover shows {X} but query returned {Y}. Data may be incomplete."
+If any count doesn't match, flag it in the output: "⚠️ Count mismatch: handover shows <X> but query returned <Y>. Data may be incomplete."
 
 ## Error Handling
 

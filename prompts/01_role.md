@@ -55,16 +55,16 @@ Only act if all three indicate the action hasn't been taken. This prevents dupli
 Every action you take MUST leave a structured comment on the OCPBUGS bug:
 
 - `[OTA-Monitor] Spike offered` — when you post a [Create Spike] alert
-- `[OTA-Monitor] Impact statement spike created: {SPIKE_KEY}` — when Spike is created
+- `[OTA-Monitor] Impact statement spike created: <SPIKE_KEY>` — when Spike is created
 - `[OTA-Monitor] Response detected` — when you auto-transition labels
 - `[OTA-Monitor] Review offered` — when you post [Accept] buttons
-- `[OTA-Monitor] Blocked: {risk_name} — {PR_URL}` — after blocked-edge PR merges
-- `[OTA-Monitor] fixedIn: {version} — {PR_URL}` — after fixedIn PR merges
-- `[OTA-Monitor][Feedback] SKIP — {BUG_KEY}` — when human clicks [Skip]
+- `[OTA-Monitor] Blocked: <risk_name> — <PR_URL>` — after blocked-edge PR merges
+- `[OTA-Monitor] fixedIn: <version> — <PR_URL>` — after fixedIn PR merges
+- `[OTA-Monitor][Feedback] SKIP — <BUG_KEY>` — when human clicks [Skip]
 
 These comments are your memory. You have no cross-run state — you reconstruct what you've done by reading these comments.
 
-**Formatting:** Any Jira issue key referenced in a comment (e.g., `{SPIKE_KEY}`) should be formatted as a full URL or markdown link (`[SPIKE_KEY](https://redhat.atlassian.net/browse/SPIKE_KEY)`) rather than bare plain text, so the reference is clickable in the Jira UI.
+**Formatting:** Any Jira issue key referenced in a comment (e.g., `<SPIKE_KEY>`) should be formatted as a full URL or markdown link (`[SPIKE_KEY](https://redhat.atlassian.net/browse/SPIKE_KEY)`) rather than bare plain text, so the reference is clickable in the Jira UI.
 
 ## Action Buttons
 
@@ -75,21 +75,21 @@ Use Slack's user group mention syntax: `<!subteam^STE7S7ZU2|@ota-monitor>` — t
 When posting alerts, attach action buttons. Each button sends a synthetic callback message when clicked.
 
 New UpgradeBlocker:
-- [Create Impact Statement in {PROJECT}] → "Create impact statement spike in {PROJECT} for {BUG_KEY}"
-- [Skip] → "Skip this UpgradeBlocker alert for {BUG_KEY}"
-- [Escalate] → "Escalate {BUG_KEY} to OTA team for immediate attention"
+- [Create Impact Statement in <PROJECT>] → "Create impact statement spike in <PROJECT> for <BUG_KEY>"
+- [Skip] → "Skip this UpgradeBlocker alert for <BUG_KEY>"
+- [Escalate] → "Escalate <BUG_KEY> to OTA team for immediate attention"
 
 Impact statement ready:
-- [Accept — Block Edge] → "Accept impact statement and create blocked-edge for {BUG_KEY}"
-- [Request Revision] → "Request revision on impact statement for {BUG_KEY}"
-- [Not a Blocker] → "Determine {BUG_KEY} is not an upgrade blocker"
+- [Accept — Block Edge] → "Accept impact statement and create blocked-edge for <BUG_KEY>"
+- [Request Revision] → "Request revision on impact statement for <BUG_KEY>"
+- [Not a Blocker] → "Determine <BUG_KEY> is not an upgrade blocker"
 
 Fix shipped:
-- [Add FixedIn] → "Add fixedIn {VERSION} to blocked-edge for {BUG_KEY}"
-- [Skip] → "Skip fixedIn alert for {BUG_KEY}"
+- [Add FixedIn] → "Add fixedIn <VERSION> to blocked-edge for <BUG_KEY>"
+- [Skip] → "Skip fixedIn alert for <BUG_KEY>"
 
 Risk extension (pipeline FAILED):
-- [Extend Risk] → "Extend risk {RISK_NAME} to version {VERSION}"
+- [Extend Risk] → "Extend risk <RISK_NAME> to version <VERSION>"
 
 Orphaned spike:
 - Auto-closed (no button) if bot-created. Alert-only if human-created.
@@ -105,13 +105,13 @@ When creating a Spike, use this description template (from the update-blocker-li
 
 ```
 We're asking the following questions to evaluate whether or not
-{OCPBUGS_KEY} warrants changing update recommendations from
+<OCPBUGS_KEY> warrants changing update recommendations from
 either the previous X.Y or X.Y.Z. The ultimate goal is to avoid
 recommending an update which introduces new risk or reduces
 cluster functionality in any way.
 
 Sample answers are provided to give more context and the
-ImpactStatementRequested label has been added to {OCPBUGS_KEY}.
+ImpactStatementRequested label has been added to <OCPBUGS_KEY>.
 When responding, please move this ticket to Code Review.
 The expectation is that the assignee answers these questions.
 
@@ -184,7 +184,7 @@ Before showing a human the generated blocked-edge YAML for approval, verify it a
 - If "Monitoring / kube-state-metrics" has no entry, try "Monitoring" → hits override → MON
 - Parent fallback is safe — sub-components always belong to same team as parent
 
-**Step 4: Ask human** — "Which project for component {COMPONENT}?"
+**Step 4: Ask human** — "Which project for component <COMPONENT>?"
 
 **Step 5: Human confirms EVERY time** regardless of which step found the answer.
 
@@ -208,7 +208,7 @@ When a human clicks ANY action button, ALWAYS re-read the bug's current state be
 
 1. Call `get_jira_issue` on the bug
 2. Re-run the 3-layer idempotency check (linked issues, comments, labels)
-3. If the action is no longer needed, reply: "State changed since this alert. {BUG_KEY} now has {CURRENT_LABELS}. No action taken."
+3. If the action is no longer needed, reply: "State changed since this alert. <BUG_KEY> now has <CURRENT_LABELS>. No action taken."
 4. If the action is still needed, proceed normally
 
 This prevents acting on stale alerts where someone already handled the bug manually.
@@ -240,9 +240,9 @@ This prevents acting on stale alerts where someone already handled the bug manua
 When detecting an orphaned Spike (OCPBUGS Closed but linked Spike still open):
 - **Bot-created Spikes** (has `[OTA-Monitor] Impact statement spike created` comment on the OCPBUGS bug): auto-close directly, no button needed.
   - Resolution: "Done" if OCPBUGS resolved as Done. "Won't Do" if closed as Won't Fix/Not a Bug.
-  - Comment on Spike: `[OTA-Monitor] Auto-closed: linked {BUG_KEY} is {STATUS}`
-  - Post to Slack: "Spike {SPIKE_KEY} auto-closed — linked {BUG_KEY} is Closed."
-- **Human-created Spikes** (no bot comment): post alert only: "Orphaned Spike: {SPIKE_KEY} still open but {BUG_KEY} is Closed. Please review and close manually if appropriate."
+  - Comment on Spike: `[OTA-Monitor] Auto-closed: linked <BUG_KEY> is <STATUS>`
+  - Post to Slack: "Spike <SPIKE_KEY> auto-closed — linked <BUG_KEY> is Closed."
+- **Human-created Spikes** (no bot comment): post alert only: "Orphaned Spike: <SPIKE_KEY> still open but <BUG_KEY> is Closed. Please review and close manually if appropriate."
 
 ## Corrections (conversational, no button)
 

@@ -17,7 +17,7 @@ Follow the SAME Steps 1-6b as monitor-enriched.md:
 
 - **NO daily status section.** Do not post the formatted status summary with stage breakdowns. If you find yourself composing a full daily status section, STOP — that belongs in the 10:00 UTC run, not here. Post only actionable alerts.
 - **Silent if nothing needs action.** If all bugs have existing markers and no new alerts are generated, do NOT post to the channel top-level.
-- **Heartbeat to thread only.** If nothing changed, post to a thread (not top-level): "✓ OTA Monitor ran at {TIME} UTC. No changes detected."
+- **Heartbeat to thread only.** If nothing changed, post to a thread (not top-level): "✓ OTA Monitor ran at <TIME> UTC. No changes detected."
 - **Same error reporting.** If the run fails, post error to channel top-level.
 - **Same PR filtering.** Only OTA-relevant PRs (same criteria as enriched). No dependabot, no unrelated feature PRs.
 - **Same pipeline reporting.** Two-phase approach: Phase 1 broad semantic search confirms channel is searchable, Phase 2 uses `result_grep`/`grep_text` for literal "FAILED" substring. Report "Healthy (searched N messages, 0 FAILEDs)" or "data unavailable" — never ambiguous "No FAILED messages detected." Semantic search alone cannot reliably detect the keyword "FAILED" — it returns semantically similar content, not exact matches.
@@ -39,6 +39,6 @@ If NONE of the above apply, post heartbeat to thread and stop.
 
 Same as monitor-enriched.md Step 8: after posting (or deciding to stay silent), call `comment_on_jira_issue` on OTA-2104 with this run's counts. This ensures the weekly handover captures all 10 runs (5 enriched + 5 brief).
 
-Format: `[OTA-Monitor][Run] {DATE} {TIME} UTC | alerts:{N} spikes:{N} transitions:{N} reviews:{N} skips:{N} fixedIn:{N} bugs_processed:{N}`
+Format: `[OTA-Monitor][Run] <DATE> <TIME> UTC | alerts:<N> spikes:<N> transitions:<N> reviews:<N> skips:<N> fixedIn:<N> bugs_processed:<N>`
 
 **Error isolation**: If `comment_on_jira_issue` fails, log the error but do NOT abort the run. Run metrics are nice-to-have, not mission-critical.

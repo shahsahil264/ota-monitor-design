@@ -47,7 +47,7 @@ Process in batches of 10. After each batch of 10, call `compact()` with structur
 
 Include: bug key, which rule matched, action taken or skipped. This is the LLM's memory of what it already handled — without it, bugs from prior batches may be re-evaluated.
 
-If `get_jira_issue` fails for a bug, skip it and note in the summary: "Could not inspect {BUG_KEY} — Jira API error."
+If `get_jira_issue` fails for a bug, skip it and note in the summary: "Could not inspect <BUG_KEY> — Jira API error."
 
 ## Step 4: Classify each candidate (priority order, first match wins)
 
@@ -59,7 +59,7 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 - Check B: does the `fixVersion` field have a value, OR does a comment match `Fixed in.*Advisory.*errata`? If no fix signal → skip (nothing to act on)
 - Check C: search openshift/cincinnati-graph-data for blocked-edge YAML files that reference this bug's Spike URL or risk name. If a matching file already has a `fixedIn` field set → skip (already handled manually before bot monitoring). This check prevents false alerts for pre-bot bugs that were resolved outside the bot's workflow.
 - If fix signal detected (Check B) AND no existing fixedIn in YAML (Check C) AND no bot marker (Check A) → post alert:
-  "Fix detected for {BUG_KEY}. Version: {VERSION}. [Add FixedIn] [Skip]"
+  "Fix detected for <BUG_KEY>. Version: <VERSION>. [Add FixedIn] [Skip]"
 - → NEXT BUG
 
 **Rule 2 — active blocker (no action, count only):**
@@ -80,7 +80,7 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 **Rule 4 — impact statement ready for review:**
 - Labels contain `ImpactStatementProposed`
 - No comment matching `[OTA-Monitor] Review offered`
-- Post alert: "Impact Statement Ready for {BUG_KEY}. [Accept — Block Edge] [Request Revision] [Not a Blocker]"
+- Post alert: "Impact Statement Ready for <BUG_KEY>. [Accept — Block Edge] [Request Revision] [Not a Blocker]"
 - Add comment: `[OTA-Monitor] Review offered`
 - → NEXT BUG
 
@@ -88,7 +88,7 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 - Labels contain `ImpactStatementProposed`
 - Comment `[OTA-Monitor] Review offered` exists AND is older than 24 hours
 - No comment matching `[OTA-Monitor] Reviewed`
-- Post reminder in thread: "Reminder: {BUG_KEY} impact statement awaiting OTA review (offered {N} hours ago)."
+- Post reminder in thread: "Reminder: <BUG_KEY> impact statement awaiting OTA review (offered <N> hours ago)."
 - → NEXT BUG
 
 **Rule 5 — stale impact statement request:**
@@ -99,12 +99,12 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
   - Else → skip this rule (no way to determine when the request started)
 - Reference timestamp is older than 48 hours
 - Look up the assignee's team using orgdata (component → team)
-- Post reminder: "STALE: {BUG_KEY} — impact statement requested {N} days ago. Team: {TEAM}. Assignee: {ASSIGNEE}."
+- Post reminder: "STALE: <BUG_KEY> — impact statement requested <N> days ago. Team: <TEAM>. Assignee: <ASSIGNEE>."
 - → NEXT BUG
 
 **Rule 5b — escalation warning (7+ days):**
 - Same as Rule 5 but reference timestamp is older than 7 days
-- Post escalation warning: "ESCALATION: {BUG_KEY} — no impact statement response in {N} days. Per the enhancement: 'In the absence of a response within 7 days, we may declare a conditional update risk based on our current understanding.'"
+- Post escalation warning: "ESCALATION: <BUG_KEY> — no impact statement response in <N> days. Per the enhancement: 'In the absence of a response within 7 days, we may declare a conditional update risk based on our current understanding.'"
 - → NEXT BUG
 
 **Rule 6 — new UpgradeBlocker:**
@@ -113,8 +113,8 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 - No linked Spike issue (check for ANY linked Spike — open OR closed. A closed Spike means this bug was already triaged, possibly via [Not a Blocker]. Do NOT re-alert.)
 - No comment matching `[OTA-Monitor][Feedback]` (if a Feedback comment exists, this bug was already triaged — either skipped or determined not a blocker. Do NOT re-alert.)
 - **Duplicate check** (part of the condition, not after): Search for existing open Spike issues linked to bugs with the same component.
-  - If duplicate found: post "Possible duplicate: {EXISTING_SPIKE_KEY} already exists for component {COMPONENT}. [Create Spike — possible duplicate] [Skip — Duplicate]"
-  - If no duplicate: look up component → team → project using orgdata. Post alert: "New UpgradeBlocker: {BUG_KEY} — {SUMMARY}. Component: {COMPONENT}. Suggested project: {PROJECT}. [Create Impact Statement in {PROJECT}] [Skip] [Escalate]"
+  - If duplicate found: post "Possible duplicate: <EXISTING_SPIKE_KEY> already exists for component <COMPONENT>. [Create Spike — possible duplicate] [Skip — Duplicate]"
+  - If no duplicate: look up component → team → project using orgdata. Post alert: "New UpgradeBlocker: <BUG_KEY> — <SUMMARY>. Component: <COMPONENT>. Suggested project: <PROJECT>. [Create Impact Statement in <PROJECT>] [Skip] [Escalate]"
 - Add comment: `[OTA-Monitor] Spike offered`
 - → NEXT BUG
 
@@ -127,11 +127,11 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 **Orphaned spike check (all bugs):**
 - Bug status is Closed
 - A linked Spike issue exists and is NOT Closed
-- **Clone check**: Before auto-closing, check if the Spike is also linked to any OTHER open OCPBUGS bugs (clones or related bugs). If yes → do NOT auto-close. Alert instead: "Spike {SPIKE_KEY} linked to closed {BUG_KEY} but also linked to open {OTHER_BUG_KEY}. Review before closing."
+- **Clone check**: Before auto-closing, check if the Spike is also linked to any OTHER open OCPBUGS bugs (clones or related bugs). If yes → do NOT auto-close. Alert instead: "Spike <SPIKE_KEY> linked to closed <BUG_KEY> but also linked to open <OTHER_BUG_KEY>. Review before closing."
 - If no other open bugs are linked to the Spike:
   - Check: does the OCPBUGS bug have a `[OTA-Monitor] Impact statement spike created` comment? (= bot-created Spike)
-    - If bot-created: AUTO-CLOSE the Spike directly (no button). Resolution: "Done" if bug resolved as Done, "Won't Do" if Won't Fix/Not a Bug. Comment on Spike: `[OTA-Monitor] Auto-closed: linked {BUG_KEY} is {STATUS}`. Post to Slack: "Spike {SPIKE_KEY} auto-closed."
-    - If human-created: post alert only: "Orphaned Spike: {SPIKE_KEY} still open but {BUG_KEY} is Closed. Please review and close manually."
+    - If bot-created: AUTO-CLOSE the Spike directly (no button). Resolution: "Done" if bug resolved as Done, "Won't Do" if Won't Fix/Not a Bug. Comment on Spike: `[OTA-Monitor] Auto-closed: linked <BUG_KEY> is <STATUS>`. Post to Slack: "Spike <SPIKE_KEY> auto-closed."
+    - If human-created: post alert only: "Orphaned Spike: <SPIKE_KEY> still open but <BUG_KEY> is Closed. Please review and close manually."
 - → NEXT BUG
 
 ## Step 5: Pipeline check (best-effort, two-phase)
@@ -154,8 +154,8 @@ Use `result_grep` or `grep_text` on the messages returned in Phase 1 to find lin
 For each FAILED message found via grep:
 - **First**: extract the PR number from the message. Check if that PR is merged in openshift/cincinnati-graph-data. If merged → skip (phantom failure, already resolved).
 - If message contains "branch.*already exists" → classify as "stale branch." Alert: "Pipeline: stale branch blocking promotion. Delete branch from bot fork."
-- If message contains "extend the risk" or "declare a fix version" → classify as "risk extension needed." Alert: "Pipeline: risk extension needed. {RISK_NAME} needs extending to {VERSION}. [Extend Risk] [Skip]"
-  When human clicks [Extend Risk]: trigger Skill 3 with action_type="extend". Workspace invokes /propose-risk (same composition pattern as create — do NOT use graph-extend-or-fix Go tool).
+- If message contains "extend the risk" or "declare a fix version" → classify as "risk extension needed." Alert: "Pipeline: risk extension needed. <RISK_NAME> needs extending to <VERSION>. [Extend Risk] [Skip]"
+  When human clicks [Extend Risk]: trigger Skill 3 with action_type="extend". Always invoke /propose-risk for extensions (same composition pattern as create); the graph-extend-or-fix Go tool is deprecated and must not be used.
 - If message indicates merge conflict or CI failure → classify as "PR failure." Alert: "Pipeline: promotion PR failed. Recreate PR."
 - If message contains "Recommend waiting" → ignore (informational)
 
@@ -163,7 +163,7 @@ For each FAILED message found via grep:
 
 | Phase 1 | Phase 2 | Report |
 |---------|---------|--------|
-| Results returned | 0 FAILEDs in grep | 🔄 Pipeline: Healthy (searched {N} messages, 0 FAILEDs in last 2 days) |
+| Results returned | 0 FAILEDs in grep | 🔄 Pipeline: Healthy (searched <N> messages, 0 FAILEDs in last 2 days) |
 | Results returned | N FAILEDs in grep | Process each per rules above, report count |
 | No results | — | 🔄 Pipeline: ⚠️ data unavailable (channel not indexed or search failed) |
 
@@ -175,13 +175,13 @@ The Jira lifecycle monitoring (Steps 1-4) is the reliable core. Pipeline check i
 If more than 3 new UpgradeBlocker alerts (Rule 6) would be posted in this run, do NOT post them individually. Instead, post a single summary table:
 
 ```
-New UpgradeBlocker bugs detected: {COUNT}
+New UpgradeBlocker bugs detected: <COUNT>
 
 | Bug | Component | Priority | Suggested Project |
 |-----|-----------|----------|-------------------|
 | ... | ...       | ...      | ...               |
 
-{N} bugs → {PROJECT_A}, {M} bugs → {PROJECT_B}
+<N> bugs → <PROJECT_A>, <M> bugs → <PROJECT_B>
 
 [Create All Spikes] [Review Individually] [Skip All]
 ```
@@ -211,7 +211,7 @@ Post a daily status summary to #ota-monitor-bot. **Tag the OTA Monitor rotation 
 
 - **Group bugs by lifecycle stage**, ordered by urgency (most actionable first)
 - **Omit empty stages** — do NOT show stages with 0 bugs
-- **Collapse when uniform** — if all bugs are in the same stage, use a single line: "Active Upgrade Blockers: {N} (all {STAGE})" instead of a 4-line breakdown with three "0" lines
+- **Collapse when uniform** — if all bugs are in the same stage, use a single line: "Active Upgrade Blockers: <N> (all <STAGE>)" instead of a 4-line breakdown with three "0" lines
 - **Bug-linked PRs inline** — each UpdateRecommendationsBlocked bug shows its associated blocked-edge PR and merge status on the same line (clickable link)
 - **Spike status inline** — each ImpactStatementRequested/Proposed bug shows its linked Spike and Spike status
 - **Separate PR section** — only for OTA-relevant PRs NOT tied to a specific bug
@@ -222,75 +222,75 @@ Post a daily status summary to #ota-monitor-bot. **Tag the OTA Monitor rotation 
 ### Template: quiet day (all bugs in same stage)
 
 ```
-<!subteam^STE7S7ZU2|@ota-monitor> — Daily Status — {DATE} {TIME} UTC
+<!subteam^STE7S7ZU2|@ota-monitor> — Daily Status — <DATE> <TIME> UTC
 
 ✅ No new alerts. No action needed.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📊 Active Upgrade Blockers: {N} (all UpdateRecommendationsBlocked)
+📊 Active Upgrade Blockers: <N> (all UpdateRecommendationsBlocked)
 
 ✅ Blocked, waiting for fix:
-• {BUG_KEY} — {SUMMARY}
-  {COMPONENT} · {PRIORITY} · {STATUS} — PR #{XXXX} ✅ merged
-• {BUG_KEY} — {SUMMARY}
-  {COMPONENT} · {PRIORITY} · {STATUS} — PR #{XXXX} 🔄 open
-• {BUG_KEY} — {SUMMARY}
-  {COMPONENT} · {PRIORITY} · {STATUS} — ⚠️ No blocked-edge PR found
+• <BUG_KEY> — <SUMMARY>
+  <COMPONENT> · <PRIORITY> · <STATUS> — PR #<XXXX> ✅ merged
+• <BUG_KEY> — <SUMMARY>
+  <COMPONENT> · <PRIORITY> · <STATUS> — PR #<XXXX> 🔄 open
+• <BUG_KEY> — <SUMMARY>
+  <COMPONENT> · <PRIORITY> · <STATUS> — ⚠️ No blocked-edge PR found
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📦 Other OTA PRs: {N}
-• #{XXXX} — {TITLE} {STATUS_EMOJI} {STATUS}
+📦 Other OTA PRs: <N>
+• #<XXXX> — <TITLE> <STATUS_EMOJI> <STATUS>
 
-🔄 Pipeline: Healthy (searched {N} messages, 0 FAILEDs in last 2 days)
+🔄 Pipeline: Healthy (searched <N> messages, 0 FAILEDs in last 2 days)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Next scan: {NEXT_DATE} {NEXT_TIME} UTC
+Next scan: <NEXT_DATE> <NEXT_TIME> UTC
 ```
 
 ### Template: busy day (bugs across multiple stages)
 
 ```
-<!subteam^STE7S7ZU2|@ota-monitor> — Daily Status — {DATE} {TIME} UTC
+<!subteam^STE7S7ZU2|@ota-monitor> — Daily Status — <DATE> <TIME> UTC
 
-🔴 {N} items need attention — see alerts above
+🔴 <N> items need attention — see alerts above
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📊 Active Upgrade Blockers: {TOTAL}
+📊 Active Upgrade Blockers: <TOTAL>
 
-🔴 New/Untriaged ({N}):
-• {BUG_KEY} — {SUMMARY}
-  {COMPONENT} · {PRIORITY} · {STATUS}
+🔴 New/Untriaged (<N>):
+• <BUG_KEY> — <SUMMARY>
+  <COMPONENT> · <PRIORITY> · <STATUS>
   ➡️ [Create Spike] alert posted above
 
-⏳ Waiting on Teams ({N}):
-• {BUG_KEY} — {SUMMARY}
-  {COMPONENT} · {PRIORITY} · {STATUS} — Spike: {SPIKE_KEY} ({SPIKE_STATUS}, {N} days)
+⏳ Waiting on Teams (<N>):
+• <BUG_KEY> — <SUMMARY>
+  <COMPONENT> · <PRIORITY> · <STATUS> — Spike: <SPIKE_KEY> (<SPIKE_STATUS>, <N> days)
 
-📋 Awaiting OTA Review ({N}):
-• {BUG_KEY} — {SUMMARY}
-  {COMPONENT} · {PRIORITY} · {STATUS} — Spike: {SPIKE_KEY} ({SPIKE_STATUS})
+📋 Awaiting OTA Review (<N>):
+• <BUG_KEY> — <SUMMARY>
+  <COMPONENT> · <PRIORITY> · <STATUS> — Spike: <SPIKE_KEY> (<SPIKE_STATUS>)
   ➡️ [Accept — Block Edge] alert posted above
 
-✅ Blocked, waiting for fix ({N}):
-• {BUG_KEY} — {SUMMARY}
-  {COMPONENT} · {PRIORITY} — PR #{XXXX} ✅ merged
-• {BUG_KEY} — {SUMMARY}
-  {COMPONENT} · {PRIORITY} — PR #{XXXX} 🔄 open
-• {BUG_KEY} — {SUMMARY}
-  {COMPONENT} · {PRIORITY} — ⚠️ No blocked-edge PR found
+✅ Blocked, waiting for fix (<N>):
+• <BUG_KEY> — <SUMMARY>
+  <COMPONENT> · <PRIORITY> — PR #<XXXX> ✅ merged
+• <BUG_KEY> — <SUMMARY>
+  <COMPONENT> · <PRIORITY> — PR #<XXXX> 🔄 open
+• <BUG_KEY> — <SUMMARY>
+  <COMPONENT> · <PRIORITY> — ⚠️ No blocked-edge PR found
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📦 Other OTA PRs: {N}
-• #{XXXX} — {TITLE} {STATUS_EMOJI} {STATUS}
+📦 Other OTA PRs: <N>
+• #<XXXX> — <TITLE> <STATUS_EMOJI> <STATUS>
 
-🔄 Pipeline: {PIPELINE_STATUS}
+🔄 Pipeline: <PIPELINE_STATUS>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Next scan: {NEXT_DATE} {NEXT_TIME} UTC
+Next scan: <NEXT_DATE> <NEXT_TIME> UTC
 ```
 
 ### Stage emoji mapping
@@ -306,14 +306,14 @@ Next scan: {NEXT_DATE} {NEXT_TIME} UTC
 
 | Condition | Output |
 |-----------|--------|
-| Search returned results, 0 FAILEDs | 🔄 Pipeline: Healthy (searched {N} messages, 0 FAILEDs in last 2 days) |
-| Search returned results, N FAILEDs | 🔄 Pipeline: ⚠️ {N} FAILED(s) detected — see alerts above |
+| Search returned results, 0 FAILEDs | 🔄 Pipeline: Healthy (searched <N> messages, 0 FAILEDs in last 2 days) |
+| Search returned results, N FAILEDs | 🔄 Pipeline: ⚠️ <N> FAILED(s) detected — see alerts above |
 | Search failed or channel not indexed | 🔄 Pipeline: ⚠️ data unavailable (channel not indexed or search failed) |
 
 ### Thread heartbeat (no alerts, nothing changed)
 
 If there are no alerts and nothing changed, post to a thread (not top-level):
-"✓ OTA Monitor ran at {TIME} UTC. Active blockers: {N}, no changes. Next run: {NEXT_TIME} UTC."
+"✓ OTA Monitor ran at <TIME> UTC. Active blockers: <N>, no changes. Next run: <NEXT_TIME> UTC."
 
 ## Step 8: Record run metrics
 
@@ -325,7 +325,7 @@ Call `comment_on_jira_issue` with:
 
 **Format** (single line, machine-parseable):
 ```
-[OTA-Monitor][Run] {DATE} {TIME} UTC | alerts:{N} spikes:{N} transitions:{N} reviews:{N} skips:{N} fixedIn:{N} bugs_processed:{N}
+[OTA-Monitor][Run] <DATE> <TIME> UTC | alerts:<N> spikes:<N> transitions:<N> reviews:<N> skips:<N> fixedIn:<N> bugs_processed:<N>
 ```
 
 Count each action taken during THIS run:
@@ -342,7 +342,7 @@ Count each action taken during THIS run:
 ## Step 9: Error reporting
 
 If the entire run fails (JQL timeout, API error), post an error to the channel (top-level, not thread):
-"⚠️ OTA Monitor failed at {TIME} UTC. Error: {ERROR_DETAILS}. Next run: {NEXT_TIME} UTC."
+"⚠️ OTA Monitor failed at <TIME> UTC. Error: <ERROR_DETAILS>. Next run: <NEXT_TIME> UTC."
 
 ## Bounds
 
