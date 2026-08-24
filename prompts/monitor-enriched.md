@@ -58,6 +58,7 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 - Check A: does a comment matching `[OTA-Monitor] fixedIn` exist? If yes → skip (already handled by bot)
 - Check B: does the `fixVersion` field have a value, OR does a comment match `Fixed in.*Advisory.*errata`? If no fix signal → skip (nothing to act on)
 - Check C: search openshift/cincinnati-graph-data for blocked-edge YAML files that reference this bug's Spike URL or risk name. If a matching file already has a `fixedIn` field set → skip (already handled manually before bot monitoring). This check prevents false alerts for pre-bot bugs that were resolved outside the bot's workflow.
+  - **If multiple files share the same risk name across consecutive versions** (e.g., `4.20.23-RiskName.yaml` and `4.20.24-RiskName.yaml`): identify which file represents the LATEST affected version for that risk. Only the LATEST version's file is expected to have `fixedIn` set — earlier versions' files correctly have NO `fixedIn` field, since the latest version's fixedIn already steers upgrades past all earlier blocked versions. Do NOT flag an earlier version's file as missing fixedIn; that is correct, not a gap. Only alert if the LATEST affected version's file lacks `fixedIn` despite a fix signal being detected.
 - If fix signal detected (Check B) AND no existing fixedIn in YAML (Check C) AND no bot marker (Check A) → post alert:
   "Fix detected for <BUG_KEY>. Version: <VERSION>. [Add FixedIn] [Skip]"
 - → NEXT BUG
