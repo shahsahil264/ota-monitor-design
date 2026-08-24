@@ -164,6 +164,8 @@ Before showing a human the generated blocked-edge YAML for approval, verify it a
 3. If the generated YAML deviates from what real files show, fix it before presenting — do not present something you haven't checked against a real example
 4. Note in the approval request which real file you checked against, so the human can verify your comparison
 5. Regex style in `from`/`to` (character-class `4[.]21[.]` vs backslash-escape `4\.21\.`) is NOT enforced by the validator or a strict convention — either is acceptable, no need to flag this as a deviation
+6. **`from` regex must represent the unaffected→affected transition, never affected→affected.** The `from` field should match versions that do NOT yet have this risk but WOULD encounter it upon upgrading to a version matched by `to`. Do not write a `from` regex that matches versions already affected by the same risk — that transition is redundant, since those versions are already blocked by their own edge.
+7. **If choosing `matchingRules: type: PromQL`, the query MUST evaluate to exactly 0 or 1.** The CVO cannot interpret other values — a query returning a raw metric value, multiple results, or no result at all is treated as "Unknown" (evaluation error), which the CVO handles conservatively but is not the intended signal. Verify any generated PromQL expression resolves to a scalar 0/1 before including it in a blocked-edge file. When in doubt or when no reliable metric exists for the condition, prefer `type: Always` over a PromQL query that might not evaluate cleanly.
 
 ## Component → Project Routing
 

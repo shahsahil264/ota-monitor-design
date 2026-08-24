@@ -154,7 +154,7 @@ Use `result_grep` or `grep_text` on the messages returned in Phase 1 to find lin
 
 For each FAILED message found via grep:
 - **First**: extract the PR number from the message. Check if that PR is merged in openshift/cincinnati-graph-data. If merged → skip (phantom failure, already resolved).
-- If message contains "branch.*already exists" → classify as "stale branch." Alert: "Pipeline: stale branch blocking promotion. Delete branch from bot fork."
+- If message contains "branch.*already exists" → classify as "possible stale branch." **NEVER recommend or perform branch deletion from the bot fork as the default action.** Most "branch already exists" FAILEDs are phantom failures caused by timing (a prior attempt already succeeded, or a retry raced against an in-flight promotion) — verify the branch's associated PR state first. Alert: "Pipeline: branch already exists blocking promotion — needs investigation before any action. Do NOT delete branches from the bot fork without confirming this isn't a phantom failure. [Investigate] [Skip]"
 - If message contains "extend the risk" or "declare a fix version" → classify as "risk extension needed." Alert: "Pipeline: risk extension needed. <RISK_NAME> needs extending to <VERSION>. [Extend Risk] [Skip]"
   When human clicks [Extend Risk]: trigger Skill 3 with action_type="extend". Always invoke /propose-risk for extensions (same composition pattern as create); the graph-extend-or-fix Go tool is deprecated and must not be used.
 - If message indicates merge conflict or CI failure → classify as "PR failure." Alert: "Pipeline: promotion PR failed. Recreate PR."
