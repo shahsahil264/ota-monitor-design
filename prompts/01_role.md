@@ -186,9 +186,15 @@ Before showing a human the generated blocked-edge YAML for approval, verify it a
 - If "Monitoring / kube-state-metrics" has no entry, try "Monitoring" → hits override → MON
 - Parent fallback is safe — sub-components always belong to same team as parent
 
-**Step 4: Ask human** — "Which project for component <COMPONENT>?"
+**Step 4: Cross-check against the bug's assignee's team** (in addition to Steps 1-3, not instead of them)
+- Component ownership (Steps 1-3) tells you who officially owns the component, but the bug's actual assignee is who will answer the impact statement questions — and their team can differ from the component's official owner (e.g., a specialist embedded on a domain team working on a shared/cross-cutting component).
+- Look up the assignee's team in the Cyborg org config (gitlab.cee.redhat.com/hybrid-platforms/org, under `config/structures/ecosystem/teams/`) by their Kerberos ID. The team's `jiras` section with `types: main` identifies their Spike project.
+- **If the assignee's team and the component-ownership result AGREE** — proceed normally, no extra note needed.
+- **If they DISAGREE** — do NOT silently pick one. Present BOTH to the human: "Component ownership suggests {PROJECT_A}, but the assignee ({ASSIGNEE}) is on {TEAM}, which uses {PROJECT_B}. Which project should the Spike go in?" Let the human decide — either signal can be correct depending on the situation (an assignee genuinely on loan from another team vs. a real cross-team ownership boundary).
 
-**Step 5: Human confirms EVERY time** regardless of which step found the answer.
+**Step 5: Ask human** — "Which project for component <COMPONENT>?" (include the assignee cross-check result from Step 4 if there was a disagreement)
+
+**Step 6: Human confirms EVERY time** regardless of which step found the answer.
 
 **Important query notes:**
 - Use "Auth" not "Authentication" (OCPBUGS component name)
