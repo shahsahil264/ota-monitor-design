@@ -139,10 +139,11 @@ conditional update risk based on our current understanding.
 
 - Type: Spike
 - Priority: Critical
+- **Summary (title): ALWAYS in the format `Impact statement request for <OCPBUGS_KEY>: <OCPBUGS_SUMMARY>` — always include the bug's actual summary, not just its key.** This was previously unspecified and inconsistent (worked in some cases, required a manual correction request in others) — always include it, every time, no exceptions.
 - Assignee: Same as the OCPBUGS bug's assignee
 - Label: UpgradeBlocker
 - Link: "is related to" (from Spike to OCPBUGS bug)
-- URL for blocked-edge `url` field: ALWAYS use the Spike URL, never the OCPBUGS URL. This applies to the `url` field AND any generated `message` text — NEVER reference the OCPBUGS URL anywhere in customer-facing content, even as a "See also" link. OCPBUGS bugs can be private/embargoed; only the Spike is safe to expose.
+- URL for blocked-edge `url` field: ALWAYS use the Spike URL, never the OCPBUGS URL. This applies to the `url` field AND any generated `message` text — NEVER reference the OCPBUGS URL anywhere in customer-facing content, even as a "See also" link. OCPBUGS bugs can be private/embargoed; only the Spike is safe to expose. (Note: this rule is our own addition for privacy — it is not specified by the upstream update-blocker-lifecycle enhancement doc, which doesn't address blocked-edge URL conventions at all.)
 
 ## Reading Impact Statement Answers (before generating YAML)
 
@@ -151,7 +152,13 @@ The impact statement template contains `(example: ...)` placeholder text under e
 - **Detect unanswered questions**: if a question's answer area contains ONLY the `(example: ...)` text with nothing else added above it, that question is UNANSWERED — do not extract data from the example text and do not treat it as a real answer.
 - **Detect partially-answered sections**: some questions may have a real answer AND the example text left below it (this is normal — humans often don't delete the example). Use the real answer, ignore the example.
 - **If a required question is unanswered** (no real answer, only the example remains): STOP before generating the blocked-edge YAML. Tell the human which specific question(s) are still unanswered and ask them to provide the missing information — do not guess, infer from the example, or silently omit the field.
-- Required questions for YAML generation: affected upgrade path (from/to versions) and remediation. Cluster type, impact severity, and regression status inform the `message` text but a plausible default may be used if genuinely unavailable — flag this in the approval request.
+- Required questions for YAML generation: affected upgrade path (from/to versions) and remediation. Impact severity and regression status inform the `message` text but a plausible default may be used if genuinely unavailable — flag this in the approval request.
+
+**Field mapping (per the upstream update-blocker-lifecycle enhancement doc's own stated reasoning for each question) — do not skip this:**
+- Q1 ("Which 4.y.z to 4.y'.z' updates increase vulnerability?") → populates `from` and `to`
+- **Q2 ("Which types of clusters?") → populates `matchingRules`, NOT just descriptive text in `message`.** If the answer names a specific cluster type or infrastructure provider (e.g., "GCP clusters," "baremetal clusters," "HyperShift/hosted control plane clusters"), attempt to construct a real PromQL matcher targeting that condition — do not default to `type: Always` just because a specific cluster type was named. Only use `type: Always` when the answer genuinely says "all clusters" / "no specific type" / a PromQL matcher isn't practically constructible from the answer given.
+- Q3 ("What is the impact?...") → populates `name` and `message`
+- Q4/Q5 (remediation, regression) → inform `message` and inform the human's Gate 2 judgment on whether to accept the risk at all; not YAML fields directly
 
 ## Pre-Flight Checklist (before presenting generated YAML for Gate 2 approval)
 
