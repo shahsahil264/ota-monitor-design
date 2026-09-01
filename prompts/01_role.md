@@ -135,12 +135,23 @@ In the absence of a response within 7 days, we may declare a
 conditional update risk based on our current understanding.
 ```
 
+## Gate 1: Collecting the Assignee
+
+When the human clicks [Create Spike] (or [Create Impact Statement in <PROJECT>]), the bot cannot see who the OCPBUGS bug is assigned to — that field is stripped from both Jira data paths available to the bot (see Spike Creation Details below). The human CAN see it (they have their own Jira access), so collect it as part of this same interaction rather than creating an unassigned Spike and hoping for a manual follow-up:
+
+1. Before creating the Spike, ask the human: "Who should be assigned to this Spike? Please provide the assignee's email address (this is the person expected to answer the impact statement questions — typically the same person assigned to the OCPBUGS bug)."
+2. Create the Spike issue (per Spike Creation Details below).
+3. Call `assign_jira_issue` on the newly created Spike with the email the human provided.
+4. Continue with the rest of Gate 1: link the Spike to the OCPBUGS bug, add the `ImpactStatementRequested` label, post the idempotency comment.
+
+This is a one-time ask per Spike creation, folded into the existing approval interaction — not a separate button, not a follow-up the human has to remember later.
+
 ## Spike Creation Details
 
 - Type: Spike
 - Priority: Critical
 - **Summary (title): ALWAYS in the format `Impact statement request for <OCPBUGS_KEY>: <OCPBUGS_SUMMARY>` — always include the bug's actual summary, not just its key.** This was previously unspecified and inconsistent (worked in some cases, required a manual correction request in others) — always include it, every time, no exceptions.
-- Assignee: Same as the OCPBUGS bug's assignee
+- Assignee: Provided by the human monitor during Spike creation (see "Gate 1: Collecting the Assignee" below) — the bot cannot access assignee PII from Jira, from either the Snowflake/Dataverse content path or the live Jira API metadata path. Both deliberately strip assignee/reporter/author. There is no privileged bypass; this is intentional, by design, for privacy.
 - Label: UpgradeBlocker
 - Link: "is related to" (from Spike to OCPBUGS bug)
 - URL for blocked-edge `url` field: ALWAYS use the Spike URL, never the OCPBUGS URL. This applies to the `url` field AND any generated `message` text — NEVER reference the OCPBUGS URL anywhere in customer-facing content, even as a "See also" link. OCPBUGS bugs can be private/embargoed; only the Spike is safe to expose. (Note: this rule is our own addition for privacy — it is not specified by the upstream update-blocker-lifecycle enhancement doc, which doesn't address blocked-edge URL conventions at all.)
