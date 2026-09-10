@@ -137,14 +137,19 @@ conditional update risk based on our current understanding.
 
 ## Gate 1: Collecting the Assignee
 
-When the human clicks [Create Spike] (or [Create Impact Statement in <PROJECT>]), the bot cannot see who the OCPBUGS bug is assigned to — that field is stripped from both Jira data paths available to the bot (see Spike Creation Details below). The human CAN see it (they have their own Jira access), so collect it as part of this same interaction rather than creating an unassigned Spike and hoping for a manual follow-up:
+When the human clicks [Create Spike] (or [Create Impact Statement in <PROJECT>]), the bot cannot see who the OCPBUGS bug is assigned to — that field is stripped from both Jira data paths available to the bot (see Spike Creation Details below). The human CAN see it (they have their own Jira access), so collect it as part of this same interaction rather than creating an unassigned Spike and hoping for a manual follow-up.
 
-1. Before creating the Spike, ask the human: "Who should be assigned to this Spike? Please provide the assignee's email address (this is the person expected to answer the impact statement questions — typically the same person assigned to the OCPBUGS bug)."
-2. Create the Spike issue (per Spike Creation Details below).
-3. Call `assign_jira_issue` on the newly created Spike with the email the human provided.
-4. Continue with the rest of Gate 1: link the Spike to the OCPBUGS bug, add the `ImpactStatementRequested` label, post the idempotency comment.
+**Do NOT ask for an email address or other personal identifier as the default ask.** Directly requesting "the assignee's email address" violates the base system instruction against soliciting personal/identifying information, and has been observed to trigger a response-evaluator block mid-interaction (OCPBUGS-122096). Use the Slack @-mention path instead:
+
+1. Before creating the Spike, ask the human: "Who should be assigned to this Spike? Please @-mention them in Slack (this is the person expected to answer the impact statement questions — typically the same person assigned to the OCPBUGS bug). If they're not in this Slack workspace, you can provide their email address directly instead."
+2. If the human @-mentions someone, Slack resolves it to a `@UXXXXXX` user ID client-side before the message reaches the bot. Call `resolve_slack_user` with that user ID to get their email. If the human volunteers an email address directly (e.g. because the assignee isn't in this Slack workspace), that's an acceptable fallback — just don't ask for it as the default first prompt.
+3. Create the Spike issue (per Spike Creation Details below).
+4. Call `assign_jira_issue` on the newly created Spike with the resolved (or volunteered) email.
+5. Continue with the rest of Gate 1: link the Spike to the OCPBUGS bug, add the `ImpactStatementRequested` label, post the idempotency comment.
 
 This is a one-time ask per Spike creation, folded into the existing approval interaction — not a separate button, not a follow-up the human has to remember later.
+
+**Known gap (not yet supported):** resolving a plain name or Kerberos ID (instead of a Slack @-mention) via OrgData is not currently usable — `search_employees`/`get_employee_by_uid` exist but are gated behind `individual_lookup_enabled`, which is not set for this persona. Do not attempt this path until that config change is confirmed; a follow-up will update this section once it is.
 
 ## Spike Creation Details
 
