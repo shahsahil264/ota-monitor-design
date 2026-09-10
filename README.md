@@ -115,6 +115,7 @@ Bot logs [Skip] clicks, manual overrides, and missed detections to [OTA-2104](ht
 
 ```
 ├── index.html                         # Design doc (GitHub Pages)
+├── PROJECT-CONTEXT.md                 # Living status doc — architecture, every fix, every open issue
 ├── onboarding.md                      # #chai-users onboarding message
 ├── plan.md                            # Implementation plan summary
 └── prompts/
@@ -127,6 +128,8 @@ Bot logs [Skip] clicks, manual overrides, and missed detections to [OTA-2104](ht
 
 ## Status
 
+**This section is a point-in-time snapshot as of early rollout. For current, actively-maintained status — every fix, every open issue, and full root-cause detail — see [PROJECT-CONTEXT.md](PROJECT-CONTEXT.md), which is the living source of truth for this project.**
+
 - [x] Design reviewed 4x by RH Agentic SDLC persona
 - [x] Gap analysis against 12 weeks of real RIT status docs
 - [x] Trevor King (OTA SME) reviewed and approved
@@ -137,14 +140,15 @@ Bot logs [Skip] clicks, manual overrides, and missed detections to [OTA-2104](ht
 - [x] Jira permissions verified (all 6 target projects)
 - [x] Feedback ticket created ([OTA-2104](https://redhat.atlassian.net/browse/OTA-2104))
 - [x] Workspace confirmed: standard general_dev (no custom env needed)
-- [ ] Cyborg MRs merge (!1144 + !1153) → zero overrides
 - [x] Chai Bot team deploys persona (live Aug 13, 2026)
 - [x] Snowflake credentials fixed (config override was clobbering inherited creds)
 - [x] @ota-monitor subteam mention working (<!subteam^STE7S7ZU2|@ota-monitor> syntax)
-- [ ] Prompt file updates deployed (PR #384 merged, awaiting deployment batch)
+- [x] Prompt file PRs deployed: #384, #417, #519, #538 (routing, Spike format, matchingRules mapping, assignee collection)
 - [x] Edge case audit: 6 fixes (re-alerting, phantom FAILEDs, manual Spike stale, sync lag, clone orphans, missing PRs)
-- [x] Two-phase pipeline check: semantic search + keyword grep (fixes false "data unavailable" since Aug 13)
-- [ ] Second prompt PR needed for Check C + edge case fixes + pipeline fix (post-PR #384 commits)
-- [ ] Teach 8 Verified Knowledge lessons
-- [ ] Cyborg MRs merge (!1144 + !1153) → zero overrides
+- [x] **Label-update bug — RESOLVED (PR #522).** Bot couldn't update labels on any bug it didn't create itself — blocked every UpgradeBlocker detection in production. Root-caused to a hardcoded parameter in shared Jira authorization code (not a config issue, despite initial appearances); fixed by the platform team with a per-project allowlist (`allow_full_edit: [OCPBUGS, OTA]`), a tighter design than what we'd originally proposed.
+- [x] **Spike assignee collection — RESOLVED, then hardened (PR #538 → #635).** The bot can't see Jira assignees (PII stripped by design), so it now asks the human. First version asked for a literal email address, which violated the platform's own PII-solicitation policy and got blocked by the response evaluator in production; corrected to ask for a Slack @-mention instead, resolved via `resolve_slack_user`.
+- [ ] **Pipeline "data unavailable" in scheduled scans — still open, unresolved since launch.** The channel is confirmed public and indexed, and returns real results when queried interactively — but scheduled-task runs still report "data unavailable" every time. This is NOT fixed by the two-phase semantic+keyword pipeline check design (that logic works correctly when it can reach the data at all); the actual failure is upstream of it, in how the scheduled-context search differs from interactive search. Needs platform-side investigation.
+- [ ] Public Spike visibility at Gate 2 acceptance — filed as a feature request (needs a new `set_security_level` Jira tool); no ETA.
+- [ ] Cyborg MRs merge (!1144 + !1153) → zero component-routing overrides
+- [ ] Teach remaining Verified Knowledge lessons
 "
