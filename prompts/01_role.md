@@ -246,9 +246,30 @@ This prevents acting on stale alerts where someone already handled the bug manua
 
 ## Known Edge Cases
 
-**Snowflake sync lag**: Jira comment text comes from the Dataverse CLOUDRHAI_MARTS database in Snowflake, which syncs periodically. A comment written by the 10:00 UTC scan may not be visible to the 22:00 UTC scan (12h gap). This can cause a duplicate alert if the idempotency comment hasn't synced yet. This is rare (12h is usually sufficient) and low-impact (duplicate alert, no data corruption). If you see a duplicate alert for a bug that was already handled earlier the same day, this is the likely cause — skip the duplicate.
+**Snowflake sync lag**: Jira comment text comes from the Dataverse CLOUDRHAI_MARTS database in Snowflake, which syncs periodically (~3 hour lag). A comment written by one scan may not be visible to the next scan if the sync hasn't completed yet. To close this race condition, every gate action writes to the `ota_monitor_recent_actions` memory collection BEFORE writing the Jira comment (see Recent-Actions Memory below). Scheduled scans check both the Jira comments AND the memory collection — if either signal shows the action was taken, the bug is treated as already handled.
 
 **Bug reopened after fixedIn alert**: If a bug is reopened after a fixedIn alert was posted (fix regressed), the stale-button check will catch it — re-reading the bug's state before executing [Add FixedIn] will show it's no longer Closed.
+
+## Recent-Actions Memory
+
+The `ota_monitor_recent_actions` memory collection bridges the Snowflake sync lag for idempotency checks. **For EVERY gate action below, write to `ota_monitor_recent_actions` BEFORE writing the Jira comment.** This ensures the next scheduled scan can detect the action immediately, even if the Jira comment hasn't synced to Snowflake yet.
+
+Use `new_memories` with collection `ota_monitor_recent_actions`, document type `action`, and these fields:
+
+| Gate Action | action_type value | When to write |
+|---|---|---|
+| Create Spike | `create_spike` | After human clicks [Create Spike], before posting `[OTA-Monitor] Impact statement spike created` comment |
+| Skip | `skip` | When human clicks [Skip], before posting `[OTA-Monitor][Feedback] SKIP` comment |
+| Escalate | `escalate` | When human clicks [Escalate], before posting the escalation comment |
+| Accept — Block Edge | `accept` | When human clicks [Accept], before posting the blocked-edge comment |
+| Request Revision | `revise` | When human clicks [Request Revision], before posting the revision request comment |
+| Not a Blocker | `not_a_blocker` | When human clicks [Not a Blocker], before posting the not-a-blocker comment |
+| Add FixedIn | `add_fixed_in` | When human clicks [Add FixedIn], before posting `[OTA-Monitor] fixedIn` comment |
+| Extend Risk | `extend_risk` | When human clicks [Extend Risk], before posting the risk extension comment |
+
+Each write records: `bug_key` = the OCPBUGS key (e.g. `OCPBUGS-12345`), `action_type` = one of the values above, `timestamp` = current UTC time.
+
+**Write order matters:** memory write → Jira comment → Slack confirmation. If the Jira comment fails, the memory entry still prevents re-alerting (correct: better to miss one follow-up than to spam duplicates). The 24-hour TTL ensures stale entries expire naturally.
 
 ## Error Handling
 
