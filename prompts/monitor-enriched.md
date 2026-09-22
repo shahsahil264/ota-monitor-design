@@ -18,7 +18,7 @@ project = OCPBUGS AND labels = UpdateRecommendationsBlocked AND status in (Close
 
 The `updated >= "2026-08-13"` filter excludes bugs closed before the bot started monitoring. Without this, every pre-existing Closed+UpdateRecommendationsBlocked bug appears as a fixedIn candidate every scan (they lack `[OTA-Monitor] fixedIn` comments because the bot didn't exist yet). Bugs closed before Aug 13 2026 were handled manually — the bot should not re-alert on them.
 
-`query_jira` returns metadata only (key, summary, status, priority, labels) — no comments, no description. This is cheap.
+`query_jira` returns state only (key, summary, status, priority, assignee, dates, labels, components) — no comments, no description. This is cheap.
 
 ## Step 2: Filter candidates for detailed inspection
 
@@ -53,13 +53,16 @@ If `get_jira_issue` fails for a bug, skip it and note in the summary: "Could not
 
 For each inspected bug, evaluate rules in this exact order. **STOP at the first matching rule. Do NOT evaluate further rules for that bug.** Move to the next bug immediately after a match.
 
+**Memory-based idempotency (all rules):** In addition to the existing Jira comment/label/linked-issue checks, also query the `ota_monitor_recent_actions` memory collection for each bug's key. If any matching entry exists (regardless of action_type), treat the bug as already handled — do NOT re-alert. This check closes the Snowflake sync lag race condition where a Jira comment written by a recent action hasn't synced yet. Run existing checks first, THEN also check memory. If EITHER signal shows the action was taken, suppress.
+
 **Rule 1 — fixedIn available (secondary JQL bugs only):**
 - Bug is from secondary JQL (Closed/Verified + UpdateRecommendationsBlocked)
 - Check A: does a comment matching `[OTA-Monitor] fixedIn` exist? If yes → skip (already handled by bot)
+- Check A2 (memory): query `ota_monitor_recent_actions` for this bug_key. If any entry exists (regardless of action_type) → skip (action was recently taken, Jira comment may not have synced yet)
 - Check B: does the `fixVersion` field have a value, OR does a comment match `Fixed in.*Advisory.*errata`? If no fix signal → skip (nothing to act on)
 - Check C: search openshift/cincinnati-graph-data for blocked-edge YAML files that reference this bug's Spike URL or risk name. If a matching file already has a `fixedIn` field set → skip (already handled manually before bot monitoring). This check prevents false alerts for pre-bot bugs that were resolved outside the bot's workflow.
   - **If multiple files share the same risk name across consecutive versions** (e.g., `4.20.23-RiskName.yaml` and `4.20.24-RiskName.yaml`): identify which file represents the LATEST affected version for that risk. Only the LATEST version's file is expected to have `fixedIn` set — earlier versions' files have no `fixedIn` field because the latest version's fixedIn already steers upgrades past all earlier blocked versions. Do NOT flag an earlier version's file as missing fixedIn; the absence of fixedIn on earlier versions is the expected state, not a gap. Only alert if the LATEST affected version's file lacks `fixedIn` despite a fix signal being detected.
-- If fix signal detected (Check B) AND no existing fixedIn in YAML (Check C) AND no bot marker (Check A) → post alert:
+- If fix signal detected (Check B) AND no existing fixedIn in YAML (Check C) AND no bot marker (Check A) AND no memory entry (Check A2) → post alert:
   "Fix detected for <BUG_KEY>. Version: <VERSION>. [Add FixedIn] [Skip]"
 - → NEXT BUG
 
@@ -72,6 +75,7 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 - Labels contain `ImpactStatementRequested`
 - Linked Spike issue exists AND Spike status is "Code Review"
 - No comment matching `[OTA-Monitor] Response detected`
+- Also query `ota_monitor_recent_actions` for this bug_key. If any entry exists (regardless of action_type) → skip (action was recently taken, Jira comment may not have synced yet)
 - ACTION (automatic, no human approval needed):
   1. ADD label `ImpactStatementProposed` to the OCPBUGS bug
   2. REMOVE label `ImpactStatementRequested` (UpgradeBlocker label STAYS — never remove it)
@@ -81,6 +85,7 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 **Rule 4 — impact statement ready for review:**
 - Labels contain `ImpactStatementProposed`
 - No comment matching `[OTA-Monitor] Review offered`
+- Also query `ota_monitor_recent_actions` for this bug_key. If any entry exists (regardless of action_type) → skip (action was recently taken, Jira comment may not have synced yet)
 - Post alert: "Impact Statement Ready for <BUG_KEY>. [Accept — Block Edge] [Request Revision] [Not a Blocker]"
 - Add comment: `[OTA-Monitor] Review offered`
 - → NEXT BUG
@@ -89,6 +94,7 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 - Labels contain `ImpactStatementProposed`
 - Comment `[OTA-Monitor] Review offered` exists AND is older than 24 hours
 - No comment matching `[OTA-Monitor] Reviewed`
+- Also query `ota_monitor_recent_actions` for this bug_key. If any entry exists (regardless of action_type) → skip (action was recently taken, Jira comment may not have synced yet)
 - Post reminder in thread: "Reminder: <BUG_KEY> impact statement awaiting OTA review (offered <N> hours ago)."
 - → NEXT BUG
 
@@ -113,6 +119,7 @@ For each inspected bug, evaluate rules in this exact order. **STOP at the first 
 - No comment matching `[OTA-Monitor] Spike offered`
 - No linked Spike issue (check for ANY linked Spike — open OR closed. A closed Spike means this bug was already triaged, possibly via [Not a Blocker]. Do NOT re-alert.)
 - No comment matching `[OTA-Monitor][Feedback]` (if a Feedback comment exists, this bug was already triaged — either skipped or determined not a blocker. Do NOT re-alert.)
+- Also query `ota_monitor_recent_actions` for this bug_key. If any entry exists (regardless of action_type) → skip (action was recently taken, Jira comment may not have synced yet)
 - **Duplicate check** (part of the condition, not after): Search for existing open Spike issues linked to bugs with the same component.
   - If duplicate found: post "Possible duplicate: <EXISTING_SPIKE_KEY> already exists for component <COMPONENT>. [Create Spike — possible duplicate] [Skip — Duplicate]"
   - If no duplicate: look up component → team → project using orgdata. Post alert: "New UpgradeBlocker: <BUG_KEY> — <SUMMARY>. Component: <COMPONENT>. Suggested project: <PROJECT>. [Create Impact Statement in <PROJECT>] [Skip] [Escalate]"
@@ -192,13 +199,15 @@ New UpgradeBlocker bugs detected: <COUNT>
 Search GitHub for open PRs in openshift/cincinnati-graph-data. **Filter to OTA-relevant PRs only:**
 
 **Include:**
-- PRs touching `blocked-edges/` or `channels/` directories
-- PRs authored by `openshift-ota-bot` (promotion PRs)
-- PRs with OTA-relevant titles containing: `blocked-edges`, `promote`, `risk`, `minor_min`, `product-life-cycle`
+- PRs touching `blocked-edges/`, `channels/`, or `internal-channels/` directories
+- PRs authored by `openshift-ota-bot` or `openshift-bot` (promotion and candidate-channel PRs)
+- PRs with OTA-relevant titles containing: `blocked-edges`, `promote`, `risk`, `minor_min`, `product-life-cycle`, `candidate`
 
 **Exclude:**
 - PRs by `dependabot` (dependency bumps)
 - PRs that don't match any of the above criteria
+
+**Needs-rebase detection:** PRs with the `needs-rebase` label have a merge conflict that blocks the pipeline — flag these as URGENT in the status report. Post an alert: "⚠️ PR #<NUMBER> — <TITLE> has `needs-rebase` (merge conflict blocking pipeline). Needs manual rebase." These PRs can sit unnoticed for days if not explicitly flagged.
 
 **Split into two categories:**
 - **Bug-linked PRs**: PRs whose title references a specific OCPBUGS bug (e.g., "blocked-edges: OCPBUGS-100182"). These go inline with their bug in the status, NOT in the PR section.
